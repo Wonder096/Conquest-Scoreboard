@@ -11,7 +11,7 @@
     <header class="top">
       <div class="brand">
         <h1>Hall of Glory</h1>
-        <p class="sub">개인마다 데이터가 따로 저장 됩니다. · 제작 단졍(Xesi)</p>
+        <p class="sub">개인마다 데이터 사이트 자동 저장 됩니다. · 제작 단졍(Xesi)</p>
       </div>
     </header>
 
@@ -22,32 +22,29 @@
       </div>
       <div id="playerInputs" class="grid"></div>
       <div class="row">
-        <button id="savePlayers" class="primary">완료</button>
-        <span id="regStatus" class="pill"></span>
+        <button id="savePlayers" class="primary">등록 완료</button>
       </div>
     </section>
 
-    <section class="card hidden" id="scoreCard">
-      <div class="card-head">
-        <h2>점령 점수 입력</h2>
-        <div class="hint">골인(숫자orN등) · 리타(리/리타) · 초사(초/초사) / 예시 : 1 / 2리 / 3초</div>
-      </div>
-      <div id="scoreInputs" class="grid"></div>
-      <div class="row">
-        <button id="addRound" class="primary">점수 추가</button>
-        <button id="clearInputs" class="ghost">다시 입력</button>
-        <div class="spacer"></div>
-        <span id="playStatus" class="pill"></span>
-      </div>
-    </section>
+    <div class="main-layout hidden" id="mainBoard">
+      <section class="card" id="scoreCard">
+        <div class="card-head">
+          <h2>점령 순위 입력</h2>
+        </div>
+        <div id="scoreInputs" class="grid"></div>
+        <div class="row">
+          <button id="addRound" class="primary">점수 추가</button>
+          <button id="clearInputs" class="ghost">다시 입력</button>
+          <div class="spacer"></div>
+          <span id="playStatus" class="pill"></span>
+        </div>
+      </section>
 
-    <section class="card hidden" id="boardCard">
-      <div class="card-head">
-        <h2>점수판</h2>
-        <div class="hint">※ 판수 → 30판 · 최고점수 → 31320점</div>
-      </div>
-      <div id="board"></div>
-    </section>
+      <section class="card" id="boardCard">
+        <div id="board"></div>
+        <div id="gameLog" class="game-log"></div>
+      </section>
+    </div>
 
     <section class="card" id="bottomCard">
       <div class="row">
@@ -63,7 +60,6 @@
       </div>
     </section>
   </div>
-
   <script src="app.js"></script>
 </body>
 </html>

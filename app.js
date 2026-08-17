@@ -248,7 +248,7 @@ function buildBoard(state){
     <table class="table">
       <thead><tr><th>순위</th><th>이름</th><th>점수</th></tr></thead>
       <tbody>
-        ${rows.map((r,i)=>`<tr><td>${i+1}</td><td>${escapeHTML(r[0])}</td><td>${r[1]}</td></tr>`).join("")}
+        ${rows.map((r,i)=>`<tr><td>${i+1}</td><td>${escapeHTML(r[0])}</td><td class="score-cell">${r[1]}</td></tr>`).join("")}
       </tbody>
     </table>
   `;
@@ -290,6 +290,7 @@ function render(){
   const registered = isRegistered(state);
 
   $("#regStatus").textContent = registered ? "등록 완료" : "아직 미등록";
+  $("#regStatus").className = registered ? "pill success-pill" : "pill";
   lockRegisterUI(registered);
 
   $("#scoreCard").classList.toggle("hidden", !registered);
@@ -330,7 +331,8 @@ function render(){
     ensureTotals(state);
     const games = state.history.length;
     const remain = Math.max(0, SETTINGS.totalGames - games);
-    $("#playStatus").textContent = isFinished(state) ? "30판 완료했어요" : `진행: ${games}판 · 남은 판 ${remain}판`;
+    $("#playStatus").textContent = isFinished(state) ? "30판 완료했어요 🎉" : `진행: ${games}판 · 남은 판 ${remain}판`;
+    $("#playStatus").className = isFinished(state) ? "pill success-pill" : "pill";
     $("#board").innerHTML = buildBoard(state);
     applyFinishedLock();
 
@@ -361,8 +363,8 @@ function registerPlayers(){
   const inputs = $$("#playerInputs input");
   const names = inputs.map(i=>i.value.trim()).slice(0, SETTINGS.rosterSize);
 
-  if(names.some(n=>!n)) return alert("닉네임은 전부 채워줘요");
-  if(new Set(names).size !== names.length) return alert("닉네임이 겹쳐요. 전부 다르게 해줘요");
+  if(names.some(n=>!n)) return alert("닉네임을 모두 입력해주세요.");
+  if(new Set(names).size !== names.length) return alert("중복된 닉네임이 있습니다. 다르게 설정해주세요.");
 
   const hasProgress = (state.history || []).length > 0;
 
@@ -416,14 +418,15 @@ function editPlayers(){
   $("#savePlayers").classList.remove("hidden");
   $("#editPlayers").classList.add("hidden");
   $("#regStatus").textContent = "수정 중";
+  $("#regStatus").className = "pill";
   const first = $("#playerInputs input");
   if(first) first.focus();
 }
 
 function addRound(){
   const state = window.__state;
-  if(!isRegistered(state)) return alert("먼저 선수 등록부터 해줘요");
-  if(isFinished(state)) return alert("30판이 다 끝났어요");
+  if(!isRegistered(state)) return alert("먼저 선수를 등록해주세요.");
+  if(isFinished(state)) return alert("30판이 모두 종료되었습니다.");
 
   const inputs = $$("#scoreInputs input");
   const tokens = inputs.map(i=>i.value.trim());
@@ -432,7 +435,7 @@ function addRound(){
   try{
     parsed = tokens.map(parseToken);
   }catch(e){
-    return alert(`입력 확인해줘요: ${e.message}`);
+    return alert(`입력값을 확인해주세요: ${e.message}`);
   }
 
   const byRank = {};
@@ -444,7 +447,7 @@ function addRound(){
   const dup = Object.entries(byRank).filter(([_,arr])=>arr.length >= 2);
   if(dup.length){
     const msg = dup.map(([rk,arr])=>`${rk}등: ${arr.join(", ")}`).join("\n");
-    return alert("등수가 겹쳤어요\n" + msg);
+    return alert("등수가 중복되었습니다!\n" + msg);
   }
 
   ensureTotals(state);
@@ -473,8 +476,8 @@ function addRound(){
 
 function undoRound(){
   const state = window.__state;
-  if(!state.history.length) return alert("되돌릴 판이 아직 없어요");
-  if(!confirm("마지막 1판만 되돌릴까요?")) return;
+  if(!state.history.length) return alert("되돌릴 기록이 없습니다.");
+  if(!confirm("마지막 1판의 기록을 삭제하시겠습니까?")) return;
 
   ensureTotals(state);
   const last = state.history.pop();
@@ -489,7 +492,7 @@ function undoRound(){
 }
 
 function resetAll(){
-  if(!confirm("전부 리셋할까요?")) return;
+  if(!confirm("모든 데이터를 초기화하시겠습니까?")) return;
   window.__state = structuredClone(DEFAULT);
   save(window.__state);
   render();
@@ -497,8 +500,8 @@ function resetAll(){
 
 function settle(){
   const state = window.__state;
-  if(!isRegistered(state)) return alert("선수 등록부터 먼저 해줘요");
-  if(!isFinished(state)) return alert("30판 다 채워야 정산이 열려요");
+  if(!isRegistered(state)) return alert("선수 등록을 먼저 진행해주세요.");
+  if(!isFinished(state)) return alert("30판을 모두 채워야 정산이 가능합니다.");
 
   ensureTotals(state);
 
@@ -536,7 +539,7 @@ function settle(){
 function exportData(){
   const state = window.__state;
   const pack = {
-    app: "TalesRunner Conquest Scoreboard",
+    app: "Hall of Glory", // 변경됨
     savedAt: nowISO(),
     theme: localStorage.getItem(THEME_KEY) || "dark",
     state,
@@ -546,7 +549,7 @@ function exportData(){
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `talse_runner_score_${pack.savedAt.replaceAll(":","").replaceAll(" ","_")}.json`;
+  a.download = `hall_of_glory_score_${pack.savedAt.replaceAll(":","").replaceAll(" ","_")}.json`; // 파일명 변경
   document.body.appendChild(a);
   a.click();
   a.remove();
@@ -575,7 +578,7 @@ function handleImportFile(file){
       const state = pack?.state;
 
       if(!state || !Array.isArray(state.players) || !Array.isArray(state.history) || typeof state.totals !== "object"){
-        alert("불러오기 파일 형식이 달라요");
+        alert("잘못된 형식의 파일입니다.");
         return;
       }
 
@@ -587,9 +590,9 @@ function handleImportFile(file){
       setTheme(theme);
       window.__state = load();
       render();
-      alert("불러오기 완료했어요");
+      alert("데이터를 성공적으로 불러왔습니다.");
     }catch{
-      alert("불러오기 실패했어요");
+      alert("데이터 불러오기에 실패했습니다.");
     }
   };
   reader.readAsText(file, "utf-8");

@@ -256,12 +256,6 @@ function buildBoard(state){
   return kpi + table;
 }
 
-function lockRegisterUI(lock){
-  $$("#playerInputs input").forEach(i=>{ i.disabled = !!lock; });
-  $("#savePlayers").classList.toggle("hidden", !!lock);
-  $("#editPlayers").classList.toggle("hidden", !lock);
-}
-
 function clearScoreInputs(){
   $$("#scoreInputs input").forEach(i=>{ i.value = ""; });
   const first = $("#scoreInputs input");
@@ -291,7 +285,9 @@ function render(){
 
   $("#regStatus").textContent = registered ? "등록 완료" : "아직 미등록";
   $("#regStatus").className = registered ? "pill success-pill" : "pill";
-  lockRegisterUI(registered);
+  
+  $("#registerCard").classList.toggle("hidden", registered);
+  $("#editPlayers").classList.toggle("hidden", !registered);
 
   $("#scoreCard").classList.toggle("hidden", !registered);
   $("#boardCard").classList.toggle("hidden", !registered);
@@ -323,7 +319,6 @@ function render(){
       }
     });
     wrap.appendChild(inp);
-
     sWrap.appendChild(wrap);
   }
 
@@ -414,11 +409,8 @@ function registerPlayers(){
 }
 
 function editPlayers(){
-  $$("#playerInputs input").forEach(i=>{ i.disabled = false; });
-  $("#savePlayers").classList.remove("hidden");
+  $("#registerCard").classList.remove("hidden");
   $("#editPlayers").classList.add("hidden");
-  $("#regStatus").textContent = "수정 중";
-  $("#regStatus").className = "pill";
   const first = $("#playerInputs input");
   if(first) first.focus();
 }
@@ -539,7 +531,7 @@ function settle(){
 function exportData(){
   const state = window.__state;
   const pack = {
-    app: "Hall of Glory", // 변경됨
+    app: "Hall of Glory",
     savedAt: nowISO(),
     theme: localStorage.getItem(THEME_KEY) || "dark",
     state,
@@ -549,7 +541,7 @@ function exportData(){
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `hall_of_glory_score_${pack.savedAt.replaceAll(":","").replaceAll(" ","_")}.json`; // 파일명 변경
+  a.download = `hall_of_glory_score_${pack.savedAt.replaceAll(":","").replaceAll(" ","_")}.json`;
   document.body.appendChild(a);
   a.click();
   a.remove();

@@ -3,15 +3,15 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>TalesRunner Conquest Scoreboard</title>
+  <title>Hall of Glory</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="wrap">
     <header class="top">
       <div class="brand">
-        <h1>TalesRunner Conquest Scoreboard</h1>
-        <p class="sub">새로고침 하면 데이터 초기화 됨 · 제작 Xesi</p>
+        <h1>Hall of Glory</h1>
+        <p class="sub">개인마다 데이터가 따로 저장 됩니다. · 제작 단졍(Xesi) </p>
       </div>
     </header>
 
@@ -22,7 +22,7 @@
       </div>
       <div id="playerInputs" class="grid"></div>
       <div class="row">
-        <button id="savePlayers">완료</button>
+        <button id="savePlayers" class="primary">완료</button>
         <button id="editPlayers" class="ghost hidden">닉네임 수정</button>
         <span id="regStatus" class="pill"></span>
       </div>
@@ -31,11 +31,11 @@
     <section class="card hidden" id="scoreCard">
       <div class="card-head">
         <h2>점령 점수 입력</h2>
-        <div class="hint">골인(숫자orN등)· 리타(리/리타) · 초사(초/초사) / 예시 : 1 / 2리 / 3초</div>
+        <div class="hint">골인(숫자orN등) · 리타(리/리타) · 초사(초/초사) / 예시 : 1 / 2리 / 3초</div>
       </div>
       <div id="scoreInputs" class="grid"></div>
       <div class="row">
-        <button id="addRound">점수 추가</button>
+        <button id="addRound" class="primary">점수 추가</button>
         <button id="clearInputs" class="ghost">다시 입력</button>
         <div class="spacer"></div>
         <span id="playStatus" class="pill"></span>
@@ -57,7 +57,7 @@
         <div class="spacer"></div>
         <button id="exportData" class="ghost">저장</button>
         <button id="importData" class="ghost">불러오기</button>
-        <button id="settle" class="ghost">정산</button>
+        <button id="settle" class="primary ghost">정산</button>
         <button id="resetAll" class="danger">리셋</button>
         <input id="importFile" type="file" accept="application/json" class="fileHidden" />
       </div>

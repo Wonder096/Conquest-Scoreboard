@@ -206,7 +206,7 @@ function computePerPlayerStats(state, perTags){
       goalCount,
       reCount,
       xCount,
-      summary: summarizeRanksFull(tags) // 정산 요약 버그 완벽 복구 완료!
+      summary: summarizeRanksFull(tags)
     };
   }
   return out;
@@ -673,6 +673,12 @@ function bind(){
     e.target.value = "";
     handleImportFile(f);
   });
+
+  const openTerms = $("#openTerms");
+  const closeTerms = $("#closeTerms");
+  const termsModal = $("#termsModal");
+  if(openTerms) openTerms.onclick = (e) => { e.preventDefault(); termsModal.classList.remove("hidden"); };
+  if(closeTerms) closeTerms.onclick = () => termsModal.classList.add("hidden");
 }
 
 function init(){

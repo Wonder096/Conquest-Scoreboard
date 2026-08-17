@@ -100,11 +100,6 @@ function scoreFrom(p){
   return safeInt(SETTINGS.goalPoints[p.rank], 0);
 }
 
-function fmtSignedPretty(n){
-  if(n === 0) return "±0점";
-  return (n > 0 ? `+${n}점` : `${n}점`);
-}
-
 function isFinished(state){
   return (state.history?.length || 0) >= SETTINGS.totalGames;
 }
@@ -116,34 +111,6 @@ function escapeHTML(s){
     .replaceAll(">","&gt;")
     .replaceAll('"',"&quot;")
     .replaceAll("'","&#039;");
-}
-
-function summarizeRanksFull(tags){
-  const goals = {};
-  const res = {};
-  const xs = {};
-  for(const r of tags){
-    if(!r || r === "-") continue;
-    const s = String(r).trim();
-    const m = s.match(/^(\d+)(.*)$/);
-    if(!m) continue;
-    const rk = safeInt(m[1], 0);
-    const suf = m[2] || "";
-    if(rk < 1 || rk > 8) continue;
-    if(suf === "") goals[rk] = (goals[rk]||0) + 1;
-    else if(suf === "리") res[rk] = (res[rk]||0) + 1;
-    else if(suf === "초") xs[rk] = (xs[rk]||0) + 1;
-  }
-
-  const parts = [];
-  const gk = Object.keys(goals).map(Number).sort((a,b)=>a-b);
-  const rk = Object.keys(res).map(Number).sort((a,b)=>a-b);
-  const xk = Object.keys(xs).map(Number).sort((a,b)=>a-b);
-
-  if(gk.length) parts.push(gk.map(k=>`${k}등×${goals[k]}`).join("·"));
-  if(rk.length) parts.push(`리타(${rk.map(k=>`${k}리×${res[k]}`).join(", ")})`);
-  if(xk.length) parts.push(`초사(${xk.map(k=>`${k}초×${xs[k]}`).join(", ")})`);
-  return parts.length ? parts.join(" - ") : "-";
 }
 
 function computePerPlayerTags(state){
@@ -206,7 +173,7 @@ function computePerPlayerStats(state, perTags){
       goalCount,
       reCount,
       xCount,
-      summary: summarizeRanksFull(tags)
+      summary: "-"
     };
   }
   return out;
@@ -220,7 +187,6 @@ function buildBoard(state){
 
   const currentTotal = Object.values(state.totals).reduce((a,b)=>a+safeInt(b,0),0);
   const maxTotal = SETTINGS.maxPerGame * SETTINGS.totalGames;
-
   const maxPossibleFinal = currentTotal + (remain * SETTINGS.maxPerGame);
 
   const names = normalizeNames(state.players).filter(Boolean);
@@ -332,13 +298,20 @@ function render(){
     const logEl = $("#gameLog");
     if(logEl) {
         if(state.history.length > 0) {
-            const logs = state.history.slice().reverse().map(h => {
-              const lines = state.players.map((p, idx) => `${p} / ${h.parsed[idx].rank}등 / ${h.delta[p]}점`).join("<br>");
-              return `<div class="log-entry"># ── #<br>${lines}</div>`;
-            }).join("");
-            logEl.innerHTML = `<div class="log-title">최근 기록</div>` + logs;
+            const logs = state.history.map((h, idx) => {
+              const lines = state.players.map((p, pIdx) => `${p} / ${h.parsed[pIdx].rank}등 / ${h.delta[p]}점`).join("<br>");
+              return `
+              <div class="log-entry">
+                <div class="log-head">
+                  <span class="log-title"># ─${idx + 1}판─ #</span>
+                  <button class="del-btn" onclick="deleteRound(${idx})">삭제</button>
+                </div>
+                <div class="log-body">${lines}</div>
+              </div>`;
+            }).reverse().join("");
+            logEl.innerHTML = logs;
         } else {
-            logEl.innerHTML = "";
+            logEl.innerHTML = `<div class="empty-log">아직 기록이 없습니다.</div>`;
         }
     }
 
@@ -500,6 +473,25 @@ function undoRound(){
   render();
 }
 
+window.deleteRound = function(idx) {
+  const state = window.__state;
+  if(!confirm(`${idx+1}판 기록을 삭제하시겠습니까?`)) return;
+  state.history.splice(idx, 1);
+  
+  const newTotals = {};
+  for(const n of state.players) newTotals[n] = 0;
+  
+  for(const row of state.history){
+    for(const n of state.players){
+      newTotals[n] += safeInt(row.delta[n], 0);
+    }
+  }
+  state.totals = newTotals;
+  
+  save(state);
+  render();
+};
+
 function resetAll(){
   if(!confirm("모든 데이터를 초기화하시겠습니까?")) return;
   window.__state = structuredClone(DEFAULT);
@@ -535,7 +527,7 @@ function settle(){
       goalCount: safeInt(st.goalCount, 0),
       reCount: safeInt(st.reCount, 0),
       xCount: safeInt(st.xCount, 0),
-      summary: String(st.summary || "-"),
+      summary: "-",
       isMvp: idx === 0
     };
   });

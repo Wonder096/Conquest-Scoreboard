@@ -242,6 +242,8 @@ button.primary {
   border: 1px solid var(--border2);
   border-radius: var(--radius2);
   padding: 18px;
+  display: flex;
+  flex-direction: column;
 }
 
 .kpi .t {
@@ -251,21 +253,25 @@ button.primary {
 }
 
 .kpi .v {
-  margin-top: 8px;
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-grow: 1;
+  justify-content: center;
+}
+
+.v-main {
   font-size: 24px;
   font-weight: 800;
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  word-break: keep-all;
+  line-height: 1;
 }
 
 .diff {
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 600;
-  margin-left: 6px;
   color: var(--muted);
-  white-space: nowrap; /* 절대 끊기지 않게 방지 */
+  white-space: nowrap;
 }
 
 .table {

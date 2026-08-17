@@ -4,20 +4,15 @@
   --bg-body: #11141d;
   --bg-card: #1c212e;
   --bg-inner: #151824;
-  
   --border: rgba(255, 255, 255, 0.1);
   --border2: rgba(255, 255, 255, 0.05);
-  
   --text: #f0f2f5;
   --muted: #9ba4b5;
-  
   --shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-  
   --primary: #4f46e5;
   --primary-hover: #6366f1;
   --accent: #fbbf24;
   --danger: #ef4444;
-  
   --radius: 16px;
   --radius2: 12px;
   --pad: 24px;
@@ -131,6 +126,12 @@ body {
   color: var(--muted);
   margin-bottom: 8px;
   padding-left: 4px;
+}
+
+.big-label {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text);
 }
 
 input {
@@ -300,6 +301,39 @@ button.primary {
 
 .hidden {
   display: none !important;
+}
+
+.main-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.game-log {
+  margin-top: 20px;
+  padding: 16px;
+  background: var(--bg-inner);
+  border-radius: var(--radius2);
+  font-size: 14.5px;
+  color: var(--text);
+  border: 1px solid var(--border2);
+}
+
+.log-title {
+  font-weight: 800;
+  font-size: 16px;
+  margin-bottom: 12px;
+  color: var(--primary);
+}
+
+.log-entry {
+  margin-bottom: 14px;
+  line-height: 1.6;
+  font-weight: 500;
+}
+
+.log-entry:last-child {
+  margin-bottom: 0;
 }
 
 .settleHeader {

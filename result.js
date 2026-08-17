@@ -68,7 +68,8 @@ function render(payload){
 
   const wrap = $("#summary");
   if(!payload?.lines?.length){
-    wrap.innerHTML = `<div class="pill">정산 데이터가 없어요. 메인에서 30판 채운 뒤 다시 눌러줘요</div>`;
+    // 어투를 더 깔끔하게 수정
+    wrap.innerHTML = `<div class="pill">정산 데이터가 없습니다. 메인 화면에서 30판을 완료한 뒤 다시 확인해주세요.</div>`;
     return;
   }
 
@@ -84,13 +85,14 @@ function render(payload){
     const ranks = escapeHTML(x.summary);
     const mvp = x.isMvp ? `<span class="mvpTag">👑 MVP</span>` : "";
 
+    // CSS에 맞춰 텍스트 선(━━━━)을 제거하고 심플하게 변경
     return `
       <div class="finalCard ${x.isMvp ? "finalMvp" : ""}">
         <div class="finalHead">
-          <div class="finalName">✨ ${name} ✨ ${mvp}</div>
+          <div class="finalName">${name} ${mvp}</div>
           <div class="finalScore">${total}</div>
         </div>
-        <div class="finalLine">━━━━━━━━━━━━━━━━━━━━</div>
+        <div class="finalLine"></div>
         <div class="finalGrid">
           <div class="kv"><div class="k">골인 수</div><div class="v">${goal}</div></div>
           <div class="kv"><div class="k">리타 수</div><div class="v">${re}</div></div>

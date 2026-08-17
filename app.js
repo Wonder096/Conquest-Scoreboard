@@ -118,6 +118,34 @@ function escapeHTML(s){
     .replaceAll("'","&#039;");
 }
 
+function summarizeRanksFull(tags){
+  const goals = {};
+  const res = {};
+  const xs = {};
+  for(const r of tags){
+    if(!r || r === "-") continue;
+    const s = String(r).trim();
+    const m = s.match(/^(\d+)(.*)$/);
+    if(!m) continue;
+    const rk = safeInt(m[1], 0);
+    const suf = m[2] || "";
+    if(rk < 1 || rk > 8) continue;
+    if(suf === "") goals[rk] = (goals[rk]||0) + 1;
+    else if(suf === "리") res[rk] = (res[rk]||0) + 1;
+    else if(suf === "초") xs[rk] = (xs[rk]||0) + 1;
+  }
+
+  const parts = [];
+  const gk = Object.keys(goals).map(Number).sort((a,b)=>a-b);
+  const rk = Object.keys(res).map(Number).sort((a,b)=>a-b);
+  const xk = Object.keys(xs).map(Number).sort((a,b)=>a-b);
+
+  if(gk.length) parts.push(gk.map(k=>`${k}등×${goals[k]}`).join("·"));
+  if(rk.length) parts.push(`리타(${rk.map(k=>`${k}리×${res[k]}`).join(", ")})`);
+  if(xk.length) parts.push(`초사(${xk.map(k=>`${k}초×${xs[k]}`).join(", ")})`);
+  return parts.length ? parts.join(" - ") : "-";
+}
+
 function computePerPlayerTags(state){
   const names = normalizeNames(state.players);
   const per = {};
@@ -178,7 +206,7 @@ function computePerPlayerStats(state, perTags){
       goalCount,
       reCount,
       xCount,
-      summary: "-"
+      summary: summarizeRanksFull(tags) // 빈칸으로 지워졌던 30판 요약 부분 복구
     };
   }
   return out;
@@ -193,7 +221,7 @@ function buildBoard(state){
   const currentTotal = Object.values(state.totals).reduce((a,b)=>a+safeInt(b,0),0);
   const maxTotal = SETTINGS.maxPerGame * SETTINGS.totalGames;
   const maxPossibleFinal = currentTotal + (remain * SETTINGS.maxPerGame);
-  const diff = maxPossibleFinal - maxTotal; // 깎인 점수 계산
+  const diff = maxPossibleFinal - maxTotal;
 
   const names = normalizeNames(state.players).filter(Boolean);
   const rows = names.map(n=>[n, safeInt(state.totals[n],0)]).sort((a,b)=>b[1]-a[1]);
@@ -541,7 +569,7 @@ function settle(){
       goalCount: safeInt(st.goalCount, 0),
       reCount: safeInt(st.reCount, 0),
       xCount: safeInt(st.xCount, 0),
-      summary: "-",
+      summary: String(st.summary || "-"), // 이 부분도 함께 복구 완료!
       isMvp: idx === 0
     };
   });

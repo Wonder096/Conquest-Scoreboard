@@ -222,7 +222,6 @@ function buildBoard(state){
   const maxTotal = SETTINGS.maxPerGame * SETTINGS.totalGames;
 
   const maxPossibleFinal = currentTotal + (remain * SETTINGS.maxPerGame);
-  const diff = maxPossibleFinal - maxTotal;
 
   const names = normalizeNames(state.players).filter(Boolean);
   const rows = names.map(n=>[n, safeInt(state.totals[n],0)]).sort((a,b)=>b[1]-a[1]);
@@ -230,16 +229,16 @@ function buildBoard(state){
   const kpi = `
     <div class="kpi">
       <div class="box">
-        <div class="t">현재 점수</div>
+        <div class="t">현재 점령 점수</div>
         <div class="v">${currentTotal}점</div>
       </div>
       <div class="box">
-        <div class="t">남은 판</div>
-        <div class="v">${remain}판 <span class="diff">(${games}/${SETTINGS.totalGames})</span></div>
+        <div class="t">남은 판 수</div>
+        <div class="v">${remain}판</div>
       </div>
       <div class="box">
-        <div class="t">최고 점수</div>
-        <div class="v">${maxPossibleFinal}점 <span class="diff">(${fmtSignedPretty(diff)})</span></div>
+        <div class="t">최대 가능 점수</div>
+        <div class="v">${maxPossibleFinal}점</div>
       </div>
     </div>
   `;
@@ -283,14 +282,9 @@ function render(){
 
   const registered = isRegistered(state);
 
-  $("#regStatus").textContent = registered ? "등록 완료" : "아직 미등록";
-  $("#regStatus").className = registered ? "pill success-pill" : "pill";
-  
   $("#registerCard").classList.toggle("hidden", registered);
+  $("#mainBoard").classList.toggle("hidden", !registered);
   $("#editPlayers").classList.toggle("hidden", !registered);
-
-  $("#scoreCard").classList.toggle("hidden", !registered);
-  $("#boardCard").classList.toggle("hidden", !registered);
 
   const sWrap = $("#scoreInputs");
   sWrap.innerHTML = "";
@@ -301,7 +295,7 @@ function render(){
     wrap.className = "input-wrap";
 
     const lab = document.createElement("div");
-    lab.className = "label";
+    lab.className = "label big-label";
     lab.textContent = names[i] || `${ORD[i]} 선수`;
     wrap.appendChild(lab);
 
@@ -326,9 +320,28 @@ function render(){
     ensureTotals(state);
     const games = state.history.length;
     const remain = Math.max(0, SETTINGS.totalGames - games);
-    $("#playStatus").textContent = isFinished(state) ? "30판 완료했어요 🎉" : `진행: ${games}판 · 남은 판 ${remain}판`;
-    $("#playStatus").className = isFinished(state) ? "pill success-pill" : "pill";
+    
+    const playStatus = $("#playStatus");
+    if(playStatus) {
+        playStatus.textContent = isFinished(state) ? "30판 완료했어요 🎉" : `진행: ${games}판 · 남은 판 ${remain}판`;
+        playStatus.className = isFinished(state) ? "pill success-pill" : "pill";
+    }
+    
     $("#board").innerHTML = buildBoard(state);
+    
+    const logEl = $("#gameLog");
+    if(logEl) {
+        if(state.history.length > 0) {
+            const logs = state.history.slice().reverse().map(h => {
+              const lines = state.players.map((p, idx) => `${p} / ${h.parsed[idx].rank}등 / ${h.delta[p]}점`).join("<br>");
+              return `<div class="log-entry"># ── #<br>${lines}</div>`;
+            }).join("");
+            logEl.innerHTML = `<div class="log-title">최근 기록</div>` + logs;
+        } else {
+            logEl.innerHTML = "";
+        }
+    }
+
     applyFinishedLock();
 
     const settleBtn = $("#settle");
@@ -342,8 +355,11 @@ function render(){
       }
     }
   }else{
-    $("#playStatus").textContent = "";
+    const playStatus = $("#playStatus");
+    if(playStatus) playStatus.textContent = "";
     $("#board").innerHTML = "";
+    const logEl = $("#gameLog");
+    if(logEl) logEl.innerHTML = "";
 
     const settleBtn = $("#settle");
     if(settleBtn){
@@ -410,6 +426,7 @@ function registerPlayers(){
 
 function editPlayers(){
   $("#registerCard").classList.remove("hidden");
+  $("#mainBoard").classList.add("hidden");
   $("#editPlayers").classList.add("hidden");
   const first = $("#playerInputs input");
   if(first) first.focus();

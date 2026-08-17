@@ -1,59 +1,64 @@
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css");
 
 :root {
-  /* 프리미엄 다크 테마 */
-  --bg0: #0f1115;
-  --bg1: #161921;
-  --surface: #1e222d;
-  --border: rgba(255, 255, 255, 0.08);
-  --border2: rgba(255, 255, 255, 0.04);
-  --text: #f0f2f8;
-  --muted: #8b95a5;
-  --muted2: rgba(240, 242, 248, 0.4);
-  --shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
-  --radius: 16px;
-  --radius2: 12px;
-  --pad: 24px;
-  --gap: 20px;
+  --bg-body: #11141d;
+  --bg-card: #1c212e;
+  --bg-inner: #151824;
   
-  /* 포인트 컬러 (인디고 & 골드) */
+  --border: rgba(255, 255, 255, 0.1);
+  --border2: rgba(255, 255, 255, 0.05);
+  
+  --text: #f0f2f5;
+  --muted: #9ba4b5;
+  
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  
   --primary: #4f46e5;
   --primary-hover: #6366f1;
   --accent: #fbbf24;
   --danger: #ef4444;
+  
+  --radius: 16px;
+  --radius2: 12px;
+  --pad: 24px;
+  --gap: 20px;
 }
 
 html[data-theme="light"] {
-  /* 깔끔한 라이트 테마 */
-  --bg0: #f1f5f9;
-  --bg1: #f8fafc;
-  --surface: #ffffff;
+  --bg-body: #f5f7fa;
+  --bg-card: #ffffff;
+  --bg-inner: #f9fafb;
   --border: rgba(0, 0, 0, 0.1);
   --border2: rgba(0, 0, 0, 0.05);
-  --text: #0f172a;
-  --muted: #64748b;
-  --muted2: rgba(15, 23, 42, 0.4);
-  --shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
-  
-  --primary: #4338ca;
-  --primary-hover: #4f46e5;
+  --text: #111827;
+  --muted: #6b7280;
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
 }
 
-* { box-sizing: border-box; }
-html, body { height: 100%; }
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+}
 
 body {
   margin: 0;
-  font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", sans-serif;
-  background: var(--bg0);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+  background-color: var(--bg-body);
   color: var(--text);
   line-height: 1.5;
   letter-spacing: -0.3px;
 }
 
 .wrap {
+  margin: auto;
+  width: 100%;
   max-width: 960px;
-  margin: 0 auto;
   padding: 40px 20px;
 }
 
@@ -70,9 +75,7 @@ body {
   font-size: 32px;
   font-weight: 800;
   letter-spacing: -0.5px;
-  background: linear-gradient(135deg, var(--text) 0%, var(--muted) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--text);
 }
 
 .brand .sub {
@@ -83,13 +86,12 @@ body {
 }
 
 .card {
-  background: var(--surface);
+  background-color: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   padding: var(--pad);
   margin-top: var(--gap);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .card-head {
@@ -133,20 +135,20 @@ body {
 
 input {
   width: 100%;
-  background: var(--bg0);
-  border: 1px solid var(--border);
+  background-color: var(--bg-inner);
+  border: 1px solid var(--border2);
   color: var(--text);
   border-radius: var(--radius2);
   padding: 14px;
   outline: none;
   font-size: 15px;
-  font-weight: 500;
+  font-weight: 600;
   transition: all 0.2s ease;
 }
 
 input:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.25);
 }
 
 .row {
@@ -157,7 +159,9 @@ input:focus {
   flex-wrap: wrap;
 }
 
-.spacer { flex: 1; }
+.spacer {
+  flex: 1;
+}
 
 button {
   border: none;
@@ -167,13 +171,13 @@ button {
   font-weight: 700;
   font-size: 14px;
   cursor: pointer;
-  background: var(--primary);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  background-color: var(--primary);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
   transition: all 0.2s ease;
 }
 
 button:hover {
-  background: var(--primary-hover);
+  background-color: var(--primary-hover);
   transform: translateY(-1px);
 }
 
@@ -184,19 +188,27 @@ button:disabled {
 }
 
 button.ghost {
-  background: transparent;
+  background-color: transparent;
   border: 1px solid var(--border);
   color: var(--text);
   box-shadow: none;
 }
+
 button.ghost:hover {
-  background: var(--border2);
+  background-color: var(--border2);
 }
 
-button.danger { background: var(--danger); }
-button.danger:hover { filter: brightness(1.1); }
+button.danger {
+  background-color: var(--danger);
+}
 
-button.primary { background: var(--primary); }
+button.danger:hover {
+  filter: brightness(1.1);
+}
+
+button.primary {
+  background-color: var(--primary);
+}
 
 .pill {
   display: inline-flex;
@@ -204,15 +216,17 @@ button.primary { background: var(--primary); }
   gap: 8px;
   padding: 10px 16px;
   border-radius: 99px;
-  background: var(--bg0);
+  background-color: var(--bg-inner);
+  border: 1px solid var(--border2);
   color: var(--text);
   font-size: 13px;
   font-weight: 600;
 }
+
 .pill.success-pill {
-  background: rgba(79, 70, 229, 0.1);
-  color: var(--primary);
-  border: 1px solid rgba(79, 70, 229, 0.3);
+  background-color: rgba(79, 70, 229, 0.15);
+  color: #a5b4fc;
+  border: 1px solid rgba(79, 70, 229, 0.4);
 }
 
 .kpi {
@@ -223,7 +237,7 @@ button.primary { background: var(--primary); }
 }
 
 .kpi .box {
-  background: var(--bg0);
+  background-color: var(--bg-inner);
   border: 1px solid var(--border2);
   border-radius: var(--radius2);
   padding: 18px;
@@ -253,19 +267,19 @@ button.primary { background: var(--primary); }
   border-collapse: separate;
   border-spacing: 0;
   border-radius: var(--radius2);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border2);
   overflow: hidden;
-  background: var(--bg0);
+  background-color: var(--bg-inner);
 }
 
 .table th {
   text-align: left;
   padding: 16px;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--muted);
-  border-bottom: 1px solid var(--border);
-  background: var(--border2);
+  border-bottom: 1px solid var(--border2);
+  background-color: rgba(255,255,255,0.03);
 }
 
 .table td {
@@ -276,15 +290,18 @@ button.primary { background: var(--primary); }
 }
 
 .table .score-cell {
-  font-weight: 700;
-  color: var(--primary);
+  font-weight: 800;
+  color: #a5b4fc;
 }
 
-.table tr:last-child td { border-bottom: none; }
+.table tr:last-child td {
+  border-bottom: none;
+}
 
-.hidden { display: none !important; }
+.hidden {
+  display: none !important;
+}
 
-/* 정산 페이지 (MVP, 결과) 스타일 개선 */
 .settleHeader {
   display: flex;
   align-items: flex-end;
@@ -313,7 +330,7 @@ button.primary { background: var(--primary); }
   font-weight: 800;
   letter-spacing: 1px;
   transform: rotate(-5deg);
-  background: rgba(251, 191, 36, 0.1);
+  background-color: rgba(251, 191, 36, 0.1);
 }
 
 .finalGridWrap {
@@ -326,7 +343,7 @@ button.primary { background: var(--primary); }
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 20px;
-  background: var(--bg0);
+  background-color: var(--bg-card);
 }
 
 .finalHead {
@@ -344,14 +361,14 @@ button.primary { background: var(--primary); }
 .finalScore {
   font-weight: 800;
   font-size: 20px;
-  color: var(--primary);
+  color: #a5b4fc;
 }
 
 .mvpTag {
   margin-left: 8px;
   padding: 6px 12px;
   border-radius: 99px;
-  background: rgba(251, 191, 36, 0.15);
+  background-color: rgba(251, 191, 36, 0.15);
   color: var(--accent);
   border: 1px solid rgba(251, 191, 36, 0.4);
   font-size: 13px;
@@ -361,7 +378,7 @@ button.primary { background: var(--primary); }
 .finalLine {
   margin-top: 14px;
   height: 1px;
-  background: var(--border);
+  background-color: var(--border2);
   width: 100%;
 }
 
@@ -376,7 +393,7 @@ button.primary { background: var(--primary); }
   border: 1px solid var(--border2);
   border-radius: 10px;
   padding: 12px;
-  background: var(--surface);
+  background-color: var(--bg-inner);
 }
 
 .kv .k {
@@ -391,19 +408,21 @@ button.primary { background: var(--primary); }
   font-weight: 700;
 }
 
-.kvWide { grid-column: 1 / -1; }
+.kvWide {
+  grid-column: 1 / -1;
+}
 
 .finalMvp {
   border-color: var(--accent);
   box-shadow: 0 0 20px rgba(251, 191, 36, 0.15);
-  background: linear-gradient(145deg, var(--bg0), rgba(251, 191, 36, 0.05));
+  background-image: linear-gradient(145deg, var(--bg-card), rgba(251, 191, 36, 0.08));
 }
 
 .photoBox {
   margin-top: 16px;
   border-radius: var(--radius2);
   border: 1px solid var(--border);
-  background: var(--bg0);
+  background-color: var(--bg-card);
   padding: 12px;
 }
 
@@ -411,10 +430,18 @@ button.primary { background: var(--primary); }
   width: 100%;
   border-radius: 8px;
   overflow: hidden;
-  background: #000;
+  background-color: #000;
 }
-.photoBox .frame169 { aspect-ratio: 16/9; }
-.photoBox img { width: 100%; height: 100%; object-fit: contain; }
+
+.photoBox .frame169 {
+  aspect-ratio: 16/9;
+}
+
+.photoBox img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
 
 .fileBtn {
   position: relative;
@@ -423,27 +450,60 @@ button.primary { background: var(--primary); }
   justify-content: center;
   padding: 12px 20px;
   border-radius: var(--radius2);
-  background: var(--surface);
+  background-color: var(--bg-card);
   border: 1px solid var(--border);
   color: var(--text);
   font-weight: 700;
   font-size: 14px;
   cursor: pointer;
 }
-.fileBtn:hover { background: var(--border2); }
-.fileBtn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-.fileHidden { position: absolute; width: 1px; height: 1px; opacity: 0; }
+
+.fileBtn:hover {
+  background-color: var(--border2);
+}
+
+.fileBtn input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.fileHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
 
 @media (max-width: 920px) {
-  .grid { grid-template-columns: repeat(2, 1fr); }
-  .kpi { grid-template-columns: 1fr; }
-  .finalGridWrap { grid-template-columns: 1fr; }
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .kpi {
+    grid-template-columns: 1fr;
+  }
+  .finalGridWrap {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 520px) {
-  .grid { grid-template-columns: 1fr; }
-  .card-head { flex-direction: column; align-items: flex-start; }
-  .hint { text-align: left; margin-top: 4px; }
-  .stamp { transform: rotate(-3deg); }
-  .finalGrid { grid-template-columns: 1fr; }
+  .grid {
+    grid-template-columns: 1fr;
+  }
+  .card-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .hint {
+    text-align: left;
+    margin-top: 4px;
+  }
+  .stamp {
+    transform: rotate(-3deg);
+  }
+  .finalGrid {
+    grid-template-columns: 1fr;
+  }
 }

@@ -100,6 +100,11 @@ function scoreFrom(p){
   return safeInt(SETTINGS.goalPoints[p.rank], 0);
 }
 
+function fmtSignedPretty(n){
+  if(n === 0) return "±0점";
+  return (n > 0 ? `+${n}점` : `${n}점`);
+}
+
 function isFinished(state){
   return (state.history?.length || 0) >= SETTINGS.totalGames;
 }
@@ -188,6 +193,7 @@ function buildBoard(state){
   const currentTotal = Object.values(state.totals).reduce((a,b)=>a+safeInt(b,0),0);
   const maxTotal = SETTINGS.maxPerGame * SETTINGS.totalGames;
   const maxPossibleFinal = currentTotal + (remain * SETTINGS.maxPerGame);
+  const diff = maxPossibleFinal - maxTotal; // 깎인 점수 계산
 
   const names = normalizeNames(state.players).filter(Boolean);
   const rows = names.map(n=>[n, safeInt(state.totals[n],0)]).sort((a,b)=>b[1]-a[1]);
@@ -204,7 +210,7 @@ function buildBoard(state){
       </div>
       <div class="box">
         <div class="t">최대 가능 점수</div>
-        <div class="v">${maxPossibleFinal}점</div>
+        <div class="v">${maxPossibleFinal}점 <span class="diff">(${fmtSignedPretty(diff)})</span></div>
       </div>
     </div>
   `;
@@ -299,7 +305,15 @@ function render(){
     if(logEl) {
         if(state.history.length > 0) {
             const logs = state.history.map((h, idx) => {
-              const lines = state.players.map((p, pIdx) => `${p} / ${h.parsed[pIdx].rank}등 / ${h.delta[p]}점`).join("<br>");
+              const lines = state.players.map((p, pIdx) => {
+                const parsed = h.parsed[pIdx];
+                let rankStr = `${parsed.rank}등`;
+                if(parsed.re) rankStr = `${parsed.rank}리`;
+                else if(parsed.x) rankStr = `${parsed.rank}초`;
+                
+                return `${p} ㅣ ${rankStr} ㅣ ${h.delta[p]}점`;
+              }).join("<br>");
+
               return `
               <div class="log-entry">
                 <div class="log-head">

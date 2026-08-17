@@ -254,13 +254,18 @@ button.primary {
   margin-top: 8px;
   font-size: 24px;
   font-weight: 800;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  word-break: keep-all;
 }
 
 .diff {
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 13.5px;
+  font-weight: 600;
   margin-left: 6px;
   color: var(--muted);
+  white-space: nowrap; /* 절대 끊기지 않게 방지 */
 }
 
 .table {

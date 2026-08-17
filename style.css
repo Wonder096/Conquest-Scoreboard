@@ -309,31 +309,112 @@ button.primary {
   gap: 20px;
 }
 
-.game-log {
-  margin-top: 20px;
-  padding: 16px;
-  background: var(--bg-inner);
-  border-radius: var(--radius2);
-  font-size: 14.5px;
-  color: var(--text);
-  border: 1px solid var(--border2);
+.board-layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+  align-items: stretch;
 }
 
-.log-title {
+.board-left {
+  display: flex;
+  flex-direction: column;
+}
+
+.game-log-scroll {
+  background-color: var(--bg-inner);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius2);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: 400px;
+  overflow: hidden;
+}
+
+.log-header-sticky {
+  padding: 16px;
   font-weight: 800;
-  font-size: 16px;
-  margin-bottom: 12px;
+  font-size: 15px;
   color: var(--primary);
+  border-bottom: 1px solid var(--border2);
+  background-color: rgba(0,0,0,0.1);
+  flex-shrink: 0;
+}
+
+#gameLog {
+  padding: 16px;
+  overflow-y: auto;
+  flex-grow: 1;
+}
+
+#gameLog::-webkit-scrollbar {
+  width: 6px;
+}
+
+#gameLog::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.15);
+  border-radius: 4px;
 }
 
 .log-entry {
-  margin-bottom: 14px;
-  line-height: 1.6;
-  font-weight: 500;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
 }
 
 .log-entry:last-child {
   margin-bottom: 0;
+}
+
+.log-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--border2);
+  padding-bottom: 10px;
+}
+
+.log-title {
+  font-weight: 800;
+  color: var(--text);
+  font-size: 14px;
+}
+
+.del-btn {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: var(--danger);
+  border: none;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  font-weight: 800;
+  box-shadow: none;
+  transition: all 0.2s ease;
+}
+
+.del-btn:hover {
+  background-color: var(--danger);
+  color: #fff;
+  transform: translateY(0);
+}
+
+.log-body {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.empty-log {
+  color: var(--muted);
+  font-size: 14px;
+  text-align: center;
+  padding: 20px 0;
 }
 
 .settleHeader {
@@ -519,6 +600,12 @@ button.primary {
   }
   .finalGridWrap {
     grid-template-columns: 1fr;
+  }
+  .board-layout {
+    grid-template-columns: 1fr;
+  }
+  .game-log-scroll {
+    max-height: 350px;
   }
 }
 

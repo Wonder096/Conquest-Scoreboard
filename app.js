@@ -206,7 +206,7 @@ function computePerPlayerStats(state, perTags){
       goalCount,
       reCount,
       xCount,
-      summary: summarizeRanksFull(tags) // 빈칸으로 지워졌던 30판 요약 부분 복구
+      summary: summarizeRanksFull(tags) // 정산 요약 버그 완벽 복구 완료!
     };
   }
   return out;
@@ -230,15 +230,22 @@ function buildBoard(state){
     <div class="kpi">
       <div class="box">
         <div class="t">현재 점령 점수</div>
-        <div class="v">${currentTotal}점</div>
+        <div class="v">
+          <span class="v-main">${currentTotal}점</span>
+        </div>
       </div>
       <div class="box">
         <div class="t">남은 판 수</div>
-        <div class="v">${remain}판</div>
+        <div class="v">
+          <span class="v-main">${remain}판</span>
+        </div>
       </div>
       <div class="box">
         <div class="t">최대 가능 점수</div>
-        <div class="v">${maxPossibleFinal}점 <span class="diff">(${fmtSignedPretty(diff)})</span></div>
+        <div class="v">
+          <span class="v-main">${maxPossibleFinal}점</span>
+          <span class="diff">(${fmtSignedPretty(diff)})</span>
+        </div>
       </div>
     </div>
   `;
@@ -569,7 +576,7 @@ function settle(){
       goalCount: safeInt(st.goalCount, 0),
       reCount: safeInt(st.reCount, 0),
       xCount: safeInt(st.xCount, 0),
-      summary: String(st.summary || "-"), // 이 부분도 함께 복구 완료!
+      summary: String(st.summary || "-"),
       isMvp: idx === 0
     };
   });

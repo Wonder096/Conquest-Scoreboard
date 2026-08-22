@@ -104,6 +104,29 @@
     </div>
   </div>
 
+  <div id="resultModal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-box result-modal-box">
+      <div id="receiptArea" class="receipt-area"></div>
+      <div class="row" style="margin-top: 24px;">
+        <button id="btnExportImage" class="primary">📸 이미지로 저장</button>
+        <div class="spacer"></div>
+        <button id="closeResult" class="ghost">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="profileModal" class="modal hidden">
+    <div class="modal-overlay" id="profileOverlay"></div>
+    <div class="modal-box profile-box">
+      <div id="profileContent"></div>
+      <div class="row" style="margin-top: 24px;">
+        <button id="closeProfile" class="primary" style="width: 100%;">확인</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

@@ -60,12 +60,19 @@ body {
 }
 
 .landing-wrap {
+  position: fixed;
+  inset: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  flex: 1;
-  height: 100%;
-  width: 100%;
+  z-index: 50;
+  background-color: rgba(17, 20, 29, 0.5);
+  backdrop-filter: blur(8px);
+}
+
+.landing-wrap.hidden {
+  display: none !important;
 }
 
 .landing-content {
@@ -102,13 +109,13 @@ body {
 
 .landing-actions {
   display: flex;
-  gap: 16px;
+  gap: 24px;
   justify-content: center;
 }
 
 .landing-btn {
   flex: 1;
-  padding: 16px 20px;
+  padding: 18px 20px;
   border: none;
   border-radius: var(--radius2);
   color: #fff;
@@ -143,6 +150,10 @@ body {
   width: 100%;
   max-width: 960px;
   padding: 40px 20px;
+}
+
+.wrap.hidden {
+  display: none !important;
 }
 
 .top {
@@ -272,6 +283,10 @@ body {
   text-align: right;
 }
 
+.grid-wrap {
+  width: 100%;
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -302,6 +317,14 @@ body {
   padding-bottom: 8px;
   border-bottom: 1px solid var(--border2);
   margin-bottom: 4px;
+}
+
+.team-red {
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.team-blue {
+  border-color: rgba(59, 130, 246, 0.2);
 }
 
 .team-red .team-title { color: var(--danger); }

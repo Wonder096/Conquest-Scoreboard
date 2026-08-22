@@ -817,8 +817,10 @@ function handleImportFile(file){
 }
 
 function bind(){
-  $("#btnOccMode").onclick = () => createTab("occ");
-  $("#btnCivilMode").onclick = () => createTab("civil");
+  const btnOcc = $("#btnOccMode");
+  const btnCivil = $("#btnCivilMode");
+  if(btnOcc) btnOcc.onclick = () => createTab("occ");
+  if(btnCivil) btnCivil.onclick = () => createTab("civil");
 
   $("#themeToggle").onclick = ()=>{
     const cur = document.documentElement.getAttribute("data-theme") || "dark";

@@ -1,10 +1,9 @@
 const THEME_KEY = "talse_runner_theme_v1";
 const PHOTO_KEY = "talse_runner_settle_photo_v1";
 const PAYLOAD_KEY = "talse_runner_settle_payload_v3";
-const TABS_KEY = "tr_tabs_v1";
-const ACTIVE_TAB_KEY = "tr_active_tab_v1";
-const STATE_PREFIX = "tr_state_v1_";
-const OLD_KEY = "talse_runner_scoreboard_v10";
+const TABS_KEY = "tr_tabs_v2";
+const ACTIVE_TAB_KEY = "tr_active_tab_v2";
+const STATE_PREFIX = "tr_state_v2_";
 
 const SETTINGS = {
   totalGames: 30,
@@ -32,17 +31,33 @@ function getDefaultState(mode) {
 }
 
 function initTabs() {
-  const savedTabs = localStorage.getItem(TABS_KEY);
-  if (savedTabs) {
-    tabs = JSON.parse(savedTabs);
-    activeTabId = localStorage.getItem(ACTIVE_TAB_KEY) || tabs[0]?.id;
-    if(tabs.length > 0) {
+  let savedTabs;
+  try {
+    savedTabs = JSON.parse(localStorage.getItem(TABS_KEY));
+    if(!Array.isArray(savedTabs)) savedTabs = null;
+  } catch(e) {
+    savedTabs = null;
+  }
+
+  if (savedTabs && savedTabs.length > 0) {
+    tabs = savedTabs;
+    activeTabId = localStorage.getItem(ACTIVE_TAB_KEY);
+    
+    if(!tabs.find(t => t.id === activeTabId)) {
+      activeTabId = null;
+    }
+
+    if (activeTabId) {
       showApp();
       loadCurrentTab();
     } else {
+      renderTabs();
       showLanding();
     }
   } else {
+    tabs = [];
+    activeTabId = null;
+    renderTabs();
     showLanding();
   }
 }
@@ -76,10 +91,15 @@ function createTab(mode) {
 
 function saveTabs() {
   localStorage.setItem(TABS_KEY, JSON.stringify(tabs));
-  if(activeTabId) localStorage.setItem(ACTIVE_TAB_KEY, activeTabId);
+  if(activeTabId) {
+    localStorage.setItem(ACTIVE_TAB_KEY, activeTabId);
+  } else {
+    localStorage.removeItem(ACTIVE_TAB_KEY);
+  }
 }
 
 function loadCurrentTab() {
+  if(!activeTabId) return;
   const raw = localStorage.getItem(STATE_PREFIX + activeTabId);
   const activeTab = tabs.find(t => t.id === activeTabId);
   const mode = activeTab ? activeTab.mode : "occ";
@@ -105,7 +125,9 @@ function loadCurrentTab() {
 }
 
 function saveCurrentTab() {
-  localStorage.setItem(STATE_PREFIX + activeTabId, JSON.stringify(window.__state));
+  if(activeTabId) {
+    localStorage.setItem(STATE_PREFIX + activeTabId, JSON.stringify(window.__state));
+  }
 }
 
 function save(state) {
@@ -137,6 +159,7 @@ function renderTabs() {
       if(tab.id !== activeTabId) {
         activeTabId = tab.id;
         saveTabs();
+        showApp();
         loadCurrentTab();
       }
     };
@@ -158,17 +181,19 @@ function renderTabs() {
       if (confirm(`'${tab.name}' 탭을 정말 삭제하시겠습니까?\n삭제된 데이터는 복구할 수 없습니다.`)) {
         localStorage.removeItem(STATE_PREFIX + tab.id);
         tabs = tabs.filter(t => t.id !== tab.id);
-        if (tabs.length === 0) {
-          activeTabId = null;
-          saveTabs();
-          showLanding();
-          return;
-        }
+        
         if (activeTabId === tab.id) {
-          activeTabId = tabs[0].id;
+          activeTabId = tabs.length > 0 ? tabs[0].id : null;
         }
+        
         saveTabs();
-        loadCurrentTab();
+        if(activeTabId) {
+          showApp();
+          loadCurrentTab();
+        } else {
+          renderTabs();
+          showLanding();
+        }
       }
     };
     
@@ -176,6 +201,17 @@ function renderTabs() {
     div.appendChild(closeBtn);
     container.appendChild(div);
   });
+  
+  const addBtn = document.createElement("button");
+  addBtn.className = "tab-add";
+  addBtn.textContent = "➕ 추가";
+  addBtn.onclick = () => {
+    activeTabId = null;
+    saveTabs();
+    renderTabs();
+    showLanding();
+  };
+  container.appendChild(addBtn);
 }
 
 function safeInt(v, d=0){
@@ -314,6 +350,9 @@ function computePerPlayerStats(state, perTags){
     let reCount = 0;
     let xCount = 0;
     let goalCount = 0;
+    let totalRank = 0;
+    let validRanks = 0;
+    const rawHistory = [];
 
     for(const t of tags){
       if(!t || t === "-") continue;
@@ -321,7 +360,12 @@ function computePerPlayerStats(state, perTags){
       if(!m) continue;
       const rk = safeInt(m[1], 0);
       const suf = m[2] || "";
+      
+      rawHistory.push({ rank: rk, suf: suf });
+
       if(rk >= 1 && rk <= 8){
+        totalRank += rk;
+        validRanks += 1;
         if(rk < bestRank){ bestRank = rk; bestCount = 1; }
         else if(rk === bestRank){ bestCount += 1; }
       }
@@ -331,10 +375,84 @@ function computePerPlayerStats(state, perTags){
     }
 
     if(bestRank === 99) bestRank = 0;
-    out[name] = { bestRank, bestCount, goalCount, reCount, xCount, summary: summarizeRanksFull(tags) };
+    const avgRank = validRanks > 0 ? (totalRank / validRanks).toFixed(1) : 0;
+    
+    out[name] = { 
+      bestRank, 
+      bestCount, 
+      goalCount, 
+      reCount, 
+      xCount, 
+      avgRank,
+      rawHistory,
+      summary: summarizeRanksFull(tags) 
+    };
   }
   return out;
 }
+
+window.showPlayerProfile = function(name) {
+  const state = window.__state;
+  const perTags = computePerPlayerTags(state);
+  const perStats = computePerPlayerStats(state, perTags);
+  const st = perStats[name];
+  if(!st) return;
+
+  const score = safeInt(state.totals[name], 0);
+  const names = normalizeNames(state);
+  const isTeam = getModeConfig(state.mode).isTeam;
+  const isMvp = names.reduce((max, n) => Math.max(max, safeInt(state.totals[n], 0)), 0) === score;
+  
+  let recentHTML = "";
+  const recent = st.rawHistory.slice(-5);
+  if(recent.length === 0) {
+    recentHTML = `<span style="color:var(--muted); font-size:13px;">기록 없음</span>`;
+  } else {
+    recentHTML = recent.map(r => {
+      let c = "rank-circ-red";
+      if(r.suf === "초") c = "rank-circ-gray";
+      else if(r.rank === 1) c = "rank-circ-gold";
+      else if(r.rank <= 3) c = "rank-circ-blue";
+      else if(r.rank <= 5) c = "rank-circ-green";
+      
+      let txt = r.rank;
+      if(r.suf === "리") txt = "R";
+      if(r.suf === "초") txt = "X";
+      return `<div class="rank-circle ${c}">${txt}</div>`;
+    }).join("");
+  }
+
+  const html = `
+    <div class="profile-header">
+      <h2 class="profile-name">${escapeHTML(name)} ${isMvp ? '<span class="mvp-badge">👑 MVP</span>' : ''}</h2>
+    </div>
+    <div class="profile-grid">
+      <div class="profile-box">
+        <div class="profile-t">총 획득 점수</div>
+        <div class="profile-v" style="color:#a5b4fc;">${score}점</div>
+      </div>
+      <div class="profile-box">
+        <div class="profile-t">평균 순위</div>
+        <div class="profile-v">${st.avgRank}등</div>
+      </div>
+      <div class="profile-box">
+        <div class="profile-t">1등 횟수</div>
+        <div class="profile-v">${st.bestRank === 1 ? st.bestCount : 0}회</div>
+      </div>
+      <div class="profile-box">
+        <div class="profile-t">완주 / 리타 / 초사</div>
+        <div class="profile-v">${st.goalCount} / <span style="color:var(--danger)">${st.reCount}</span> / ${st.xCount}</div>
+      </div>
+    </div>
+    <div class="profile-recent">
+      <div class="profile-t" style="margin-bottom:12px;">최근 5경기 폼</div>
+      <div style="display:flex; gap:10px; justify-content:center;">${recentHTML}</div>
+    </div>
+  `;
+
+  $("#profileContent").innerHTML = html;
+  $("#profileModal").classList.remove("hidden");
+};
 
 function buildBoard(state){
   ensureTotals(state);
@@ -401,7 +519,7 @@ function buildBoard(state){
         ${rows.map((r,i)=>`
           <tr class="${conf.isTeam ? (r.isRed ? 'row-red' : 'row-blue') : ''}">
             <td>${i+1}</td>
-            <td>${escapeHTML(r.name)}</td>
+            <td><span class="player-link" onclick="showPlayerProfile('${escapeHTML(r.name)}')">${escapeHTML(r.name)}</span></td>
             <td class="score-cell">${r.score}</td>
           </tr>
         `).join("")}
@@ -515,6 +633,7 @@ function renderPlayerInputFields(wrapId, state, isScore = false) {
 }
 
 function render(){
+  if(!activeTabId) return;
   const state = window.__state;
   const conf = getModeConfig(state.mode);
   
@@ -725,37 +844,108 @@ function resetAll(){
   render();
 }
 
+function buildReceiptHTML(state, perStats, names, conf) {
+  const currentTabName = tabs.find(t => t.id === activeTabId)?.name || "점수판";
+  const rows = names.map(name => ({ name, score: safeInt(state.totals[name],0) })).sort((a,b)=>b.score-a.score);
+  const leader = rows[0]?.score ?? 0;
+  const d = new Date();
+  const dateStr = `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+
+  let contentHTML = "";
+
+  if(conf.isTeam) {
+    let redTotal = 0, blueTotal = 0;
+    for(let i=0; i<4; i++) redTotal += safeInt(state.totals[names[i]], 0);
+    for(let i=4; i<8; i++) blueTotal += safeInt(state.totals[names[i]], 0);
+    
+    const isRedWin = redTotal > blueTotal;
+    const isBlueWin = blueTotal > redTotal;
+
+    const redRows = names.slice(0,4).map(n => ({name: n, score: safeInt(state.totals[n],0)})).sort((a,b)=>b.score-a.score);
+    const blueRows = names.slice(4,8).map(n => ({name: n, score: safeInt(state.totals[n],0)})).sort((a,b)=>b.score-a.score);
+
+    contentHTML = `
+      <div class="receipt-team-score">
+        <div class="r-team ${isRedWin?'win':''}">
+          <div class="r-team-name" style="color:var(--danger)">RED TEAM</div>
+          <div class="r-team-val">${redTotal}</div>
+        </div>
+        <div class="r-vs">VS</div>
+        <div class="r-team ${isBlueWin?'win':''}">
+          <div class="r-team-name" style="color:var(--blue)">BLUE TEAM</div>
+          <div class="r-team-val">${blueTotal}</div>
+        </div>
+      </div>
+      <div class="receipt-grid-team">
+        <div class="r-col">
+          ${redRows.map((r,i) => `
+            <div class="r-row">
+              <div class="r-rank">${i+1}</div>
+              <div class="r-name">${escapeHTML(r.name)} ${r.score === leader ? '<span class="r-mvp">MVP</span>' : ''}</div>
+              <div class="r-score">${r.score}</div>
+            </div>
+          `).join("")}
+        </div>
+        <div class="r-col">
+          ${blueRows.map((r,i) => `
+            <div class="r-row">
+              <div class="r-rank">${i+1}</div>
+              <div class="r-name">${escapeHTML(r.name)} ${r.score === leader ? '<span class="r-mvp">MVP</span>' : ''}</div>
+              <div class="r-score">${r.score}</div>
+            </div>
+          `).join("")}
+        </div>
+      </div>
+    `;
+  } else {
+    contentHTML = `
+      <div class="receipt-list">
+        ${rows.map((r,i) => `
+          <div class="r-row ${i===0?'r-first':''}">
+            <div class="r-rank">${i+1}</div>
+            <div class="r-name">${escapeHTML(r.name)} ${i===0 ? '<span class="r-mvp">MVP</span>' : ''}</div>
+            <div class="r-score">${r.score}</div>
+          </div>
+        `).join("")}
+      </div>
+    `;
+  }
+
+  return `
+    <div class="receipt-inner">
+      <div class="receipt-header">
+        <div class="r-title">Hall of Glory Match Result</div>
+        <div class="r-subtitle">${currentTabName} · ${dateStr}</div>
+      </div>
+      ${contentHTML}
+      <div class="receipt-footer">Generated by Hall of Glory · 제작: 단졍(Xesi)</div>
+    </div>
+  `;
+}
+
 function settle(){
   const state = window.__state;
   if(!isRegistered(state)) return alert("선수 등록을 먼저 진행해주세요.");
   if(!isFinished(state)) return alert("30판을 모두 채워야 정산이 가능합니다.");
 
   ensureTotals(state);
+  const conf = getModeConfig(state.mode);
+  const names = normalizeNames(state);
   const perTags = computePerPlayerTags(state);
   const perStats = computePerPlayerStats(state, perTags);
-  const players = normalizeNames(state);
-  const rows = players.map(name=>({ name, total: safeInt(state.totals[name],0) })).sort((a,b)=>b.total-a.total);
-  const leader = rows[0]?.total ?? 0;
 
-  const lines = rows.map((r, idx)=>{
-    const st = perStats[r.name] || {};
-    return {
-      name: r.name,
-      total: r.total,
-      diffFromFirst: idx === 0 ? 0 : (r.total - leader),
-      bestRank: safeInt(st.bestRank, 0),
-      bestCount: safeInt(st.bestCount, 0),
-      goalCount: safeInt(st.goalCount, 0),
-      reCount: safeInt(st.reCount, 0),
-      xCount: safeInt(st.xCount, 0),
-      summary: String(st.summary || "-"),
-      isMvp: idx === 0
-    };
+  $("#receiptArea").innerHTML = buildReceiptHTML(state, perStats, names, conf);
+  $("#resultModal").classList.remove("hidden");
+}
+
+function exportReceiptImage() {
+  const el = $("#receiptArea");
+  html2canvas(el, { backgroundColor: '#11141d', scale: 2 }).then(canvas => {
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL('image/png');
+    a.download = `HallOfGlory_Result_${Date.now()}.png`;
+    a.click();
   });
-
-  const payload = { at: nowISO(), players, lines, mode: state.mode };
-  localStorage.setItem(PAYLOAD_KEY, JSON.stringify(payload));
-  location.href = "result.html";
 }
 
 function exportData(){
@@ -801,6 +991,16 @@ function handleImportFile(file){
         return;
       }
       if(!state.mode) state.mode = "occ";
+
+      const currentTab = tabs.find(t => t.id === activeTabId);
+      const currentMode = currentTab ? currentTab.mode : "occ";
+
+      if (state.mode !== currentMode) {
+        const curName = currentMode === "civil" ? "내전(8인)" : "점령(4인)";
+        const impName = state.mode === "civil" ? "내전(8인)" : "점령(4인)";
+        alert(`불러오기 실패!\n현재 탭은 [${curName}] 모드인데, 불러오려는 파일은 [${impName}] 모드입니다.\n알맞은 모드의 탭에서 불러와주세요.`);
+        return;
+      }
 
       localStorage.setItem(THEME_KEY, theme);
       if(typeof pack?.settlePhoto === "string") localStorage.setItem(PHOTO_KEY, pack.settlePhoto);
@@ -848,6 +1048,10 @@ function bind(){
   const termsModal = $("#termsModal");
   if(openTerms) openTerms.onclick = (e) => { e.preventDefault(); termsModal.classList.remove("hidden"); };
   if(closeTerms) closeTerms.onclick = () => termsModal.classList.add("hidden");
+
+  $("#closeResult").onclick = () => $("#resultModal").classList.add("hidden");
+  $("#btnExportImage").onclick = exportReceiptImage;
+  $("#closeProfile").onclick = () => $("#profileModal").classList.add("hidden");
 }
 
 function init(){

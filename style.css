@@ -200,10 +200,6 @@ body {
   backdrop-filter: blur(8px);
 }
 
-.landing-wrap.hidden {
-  display: none !important;
-}
-
 .landing-content {
   text-align: center;
   background-color: var(--bg-card);
@@ -270,15 +266,15 @@ body {
   opacity: 0.85;
 }
 
-.btn-occ {
+button.btn-occ {
   background-color: var(--primary);
 }
-.btn-occ:hover { background-color: var(--primary-hover); transform: translateY(-3px); box-shadow: 0 8px 20px rgba(79, 70, 229, 0.4); }
+button.btn-occ:hover { background-color: var(--primary-hover); transform: translateY(-3px); box-shadow: 0 8px 20px rgba(79, 70, 229, 0.4); }
 
-.btn-civil {
+button.btn-civil {
   background-color: var(--danger);
 }
-.btn-civil:hover { background-color: var(--danger); filter: brightness(1.1); transform: translateY(-3px); box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4); }
+button.btn-civil:hover { background-color: var(--danger); filter: brightness(1.1); transform: translateY(-3px); box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4); }
 
 .card {
   background-color: var(--bg-card);
@@ -685,7 +681,7 @@ button.primary {
   padding: 20px 0;
 }
 
-.fileHidden {
+input[type="file"].fileHidden {
   display: none !important;
 }
 

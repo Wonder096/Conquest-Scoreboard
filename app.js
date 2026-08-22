@@ -670,7 +670,7 @@ function render(){
                 let rSum = 0, bSum = 0;
                 for(let i=0; i<4; i++) rSum += safeInt(h.delta[state.players[i]], 0);
                 for(let i=4; i<8; i++) bSum += safeInt(h.delta[state.players[i]], 0);
-                vsText = `<span class="log-vs"><span class="log-red">🔴 ${rSum}</span> <span style="color:var(--muted);margin:0 4px;">vs</span> <span class="log-blue">🔵 ${bSum}</span></span>`;
+                vsText = `<div class="log-vs"><span class="log-red">🔴 ${rSum}</span> <span style="color:var(--muted);margin:0 4px;">vs</span> <span class="log-blue">🔵 ${bSum}</span></div>`;
               }
 
               const linesData = state.players.map((p, pIdx) => {
@@ -698,7 +698,10 @@ function render(){
               return `
               <div class="log-entry">
                 <div class="log-head">
-                  <span class="log-title"># ─${idx + 1}판─ # ${vsText}</span>
+                  <div class="log-title-group">
+                    <div class="log-badge">${idx + 1}판</div>
+                    ${vsText}
+                  </div>
                   <button class="del-btn" onclick="deleteRound(${idx})">삭제</button>
                 </div>
                 <div class="log-body">${lines}</div>
@@ -713,7 +716,7 @@ function render(){
     applyFinishedLock();
     const settleBtn = $("#settle");
     if(settleBtn){
-      if(isFinished(state)){
+      if(state.history.length > 0){
         settleBtn.classList.add("primary","settleReady");
         settleBtn.classList.remove("ghost");
       }else{
@@ -947,7 +950,7 @@ function buildReceiptHTML(state, perStats, names, conf) {
 function settle(){
   const state = window.__state;
   if(!isRegistered(state)) return alert("선수 등록을 먼저 진행해주세요.");
-  if(!isFinished(state)) return alert("30판을 모두 채워야 정산이 가능합니다.");
+  if((state.history?.length || 0) === 0) return alert("기록이 최소 1판 이상 있어야 합니다.");
 
   ensureTotals(state);
   const conf = getModeConfig(state.mode);

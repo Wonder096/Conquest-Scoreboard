@@ -30,7 +30,7 @@ function initTabs() {
     tabs = JSON.parse(savedTabs);
     activeTabId = localStorage.getItem(ACTIVE_TAB_KEY) || tabs[0].id;
   } else {
-    tabs = [{ id: "tab_1", name: "1팀 점수판" }];
+    tabs = [{ id: "tab_1", name: "1번째 점수판" }];
     activeTabId = "tab_1";
     const oldData = localStorage.getItem(OLD_KEY);
     if (oldData) {
@@ -116,7 +116,7 @@ function renderTabs() {
         localStorage.removeItem(STATE_PREFIX + tab.id);
         tabs = tabs.filter(t => t.id !== tab.id);
         if (tabs.length === 0) {
-          tabs.push({ id: "tab_" + Date.now(), name: "새 점수판" });
+          tabs.push({ id: "tab_" + Date.now(), name: "1번째 점수판" });
         }
         if (activeTabId === tab.id) {
           activeTabId = tabs[0].id;
@@ -136,7 +136,7 @@ function renderTabs() {
   addBtn.textContent = "➕ 추가";
   addBtn.onclick = () => {
     const newId = "tab_" + Date.now();
-    const newName = "점수판 " + (tabs.length + 1);
+    const newName = (tabs.length + 1) + "번째 점수판";
     tabs.push({ id: newId, name: newName });
     activeTabId = newId;
     saveTabs();

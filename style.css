@@ -640,9 +640,20 @@ button.primary {
 }
 
 .log-title {
+  display: flex;
+  align-items: center;
   font-weight: 800;
   color: var(--text);
   font-size: 14px;
+}
+
+.log-vs {
+  margin-left: 10px;
+  font-size: 13px;
+  background: rgba(0,0,0,0.2);
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: 800;
 }
 
 .del-btn {

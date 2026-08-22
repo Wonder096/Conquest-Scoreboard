@@ -665,19 +665,40 @@ function render(){
     if(logEl) {
         if(state.history.length > 0) {
             const logs = state.history.map((h, idx) => {
-              const lines = state.players.map((p, pIdx) => {
+              let vsText = "";
+              if (conf.isTeam) {
+                let rSum = 0, bSum = 0;
+                for(let i=0; i<4; i++) rSum += safeInt(h.delta[state.players[i]], 0);
+                for(let i=4; i<8; i++) bSum += safeInt(h.delta[state.players[i]], 0);
+                vsText = `<span class="log-vs"><span class="log-red">🔴 ${rSum}</span> <span style="color:var(--muted);margin:0 4px;">vs</span> <span class="log-blue">🔵 ${bSum}</span></span>`;
+              }
+
+              const linesData = state.players.map((p, pIdx) => {
                 const parsed = h.parsed[pIdx];
-                let rankStr = `${parsed.rank}등`;
-                if(parsed.re) rankStr = `${parsed.rank}리`;
-                else if(parsed.x) rankStr = `${parsed.rank}초`;
-                const c = conf.isTeam ? (pIdx < 4 ? "log-red" : "log-blue") : "";
-                return `<span class="${c}">${p} ㅣ ${rankStr} ㅣ ${h.delta[p]}점</span>`;
+                return {
+                  p,
+                  pIdx,
+                  rank: parsed.rank,
+                  re: parsed.re,
+                  x: parsed.x,
+                  delta: h.delta[p]
+                };
+              });
+
+              linesData.sort((a, b) => a.rank - b.rank);
+
+              const lines = linesData.map(obj => {
+                let rankStr = `${obj.rank}등`;
+                if(obj.re) rankStr = `${obj.rank}리`;
+                else if(obj.x) rankStr = `${obj.rank}초`;
+                const c = conf.isTeam ? (obj.pIdx < 4 ? "log-red" : "log-blue") : "";
+                return `<span class="${c}">${obj.p} ㅣ ${rankStr} ㅣ ${obj.delta}점</span>`;
               }).join("<br>");
 
               return `
               <div class="log-entry">
                 <div class="log-head">
-                  <span class="log-title"># ─${idx + 1}판─ #</span>
+                  <span class="log-title"># ─${idx + 1}판─ # ${vsText}</span>
                   <button class="del-btn" onclick="deleteRound(${idx})">삭제</button>
                 </div>
                 <div class="log-body">${lines}</div>
@@ -938,6 +959,43 @@ function settle(){
   $("#resultModal").classList.remove("hidden");
 }
 
+function copyReceiptText() {
+  const state = window.__state;
+  const conf = getModeConfig(state.mode);
+  const names = normalizeNames(state);
+  const currentTabName = tabs.find(t => t.id === activeTabId)?.name || "점수판";
+  const rows = names.map(n => ({ name: n, score: safeInt(state.totals[n],0) })).sort((a,b)=>b.score-a.score);
+  const leader = rows[0]?.score ?? 0;
+
+  let txt = `[ Hall of Glory - ${currentTabName} ]\n\n`;
+
+  if (conf.isTeam) {
+    let redTotal = 0, blueTotal = 0;
+    for(let i=0; i<4; i++) redTotal += safeInt(state.totals[names[i]], 0);
+    for(let i=4; i<8; i++) blueTotal += safeInt(state.totals[names[i]], 0);
+
+    txt += `🔴 RED TEAM : ${redTotal}점 ${redTotal > blueTotal ? "👑" : ""}\n`;
+    txt += `🔵 BLUE TEAM : ${blueTotal}점 ${blueTotal > redTotal ? "👑" : ""}\n\n`;
+    txt += `[ 개인 점수 ]\n`;
+  }
+
+  rows.forEach((r, i) => {
+    const mvp = (r.score === leader) ? " 👑 MVP" : "";
+    let teamMarker = "";
+    if(conf.isTeam) {
+        const idx = names.indexOf(r.name);
+        teamMarker = idx < 4 ? "🔴 " : "🔵 ";
+    }
+    txt += `${i+1}위. ${teamMarker}${r.name} (${r.score}점)${mvp}\n`;
+  });
+
+  navigator.clipboard.writeText(txt).then(() => {
+    alert("결과가 클립보드에 복사되었습니다!\n디스코드나 카카오톡에 붙여넣기(Ctrl+V) 해보세요.");
+  }).catch(() => {
+    alert("복사에 실패했습니다. 브라우저 설정을 확인해주세요.");
+  });
+}
+
 function exportReceiptImage() {
   const el = $("#receiptArea");
   html2canvas(el, { backgroundColor: '#11141d', scale: 2 }).then(canvas => {
@@ -1051,6 +1109,7 @@ function bind(){
 
   $("#closeResult").onclick = () => $("#resultModal").classList.add("hidden");
   $("#btnExportImage").onclick = exportReceiptImage;
+  $("#btnCopyText").onclick = copyReceiptText;
   $("#closeProfile").onclick = () => $("#profileModal").classList.add("hidden");
 }
 

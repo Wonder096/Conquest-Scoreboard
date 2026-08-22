@@ -7,61 +7,98 @@ const STATE_PREFIX = "tr_state_v1_";
 const OLD_KEY = "talse_runner_scoreboard_v10";
 
 const SETTINGS = {
-  rosterSize: 4,
   totalGames: 30,
-  basePerGame: 1000,
   maxPerGame: 1044,
   goalPoints: {1:288,2:270,3:252,4:234,5:216,6:198,7:180,8:162},
   retaPoints: {1:144,2:135,3:126,4:116,5:108,6:99,7:90,8:81},
   xPoints: 0
 };
 
-const DEFAULT = { players: ["","","",""], totals: {}, history: [] };
-const ORD = ["첫번째","두번째","세번째","네번째"];
 const $ = (s)=>document.querySelector(s);
 const $$ = (s)=>Array.from(document.querySelectorAll(s));
 
 let tabs = [];
 let activeTabId = null;
 
+function getModeConfig(mode) {
+  if(mode === "civil") return { rosterSize: 8, isTeam: true };
+  return { rosterSize: 4, isTeam: false };
+}
+
+function getDefaultState(mode) {
+  const conf = getModeConfig(mode);
+  const players = Array(conf.rosterSize).fill("");
+  return { mode: mode || "occ", players, totals: {}, history: [] };
+}
+
 function initTabs() {
   const savedTabs = localStorage.getItem(TABS_KEY);
   if (savedTabs) {
     tabs = JSON.parse(savedTabs);
-    activeTabId = localStorage.getItem(ACTIVE_TAB_KEY) || tabs[0].id;
-  } else {
-    tabs = [{ id: "tab_1", name: "1번째 점수판" }];
-    activeTabId = "tab_1";
-    const oldData = localStorage.getItem(OLD_KEY);
-    if (oldData) {
-      localStorage.setItem(STATE_PREFIX + "tab_1", oldData);
+    activeTabId = localStorage.getItem(ACTIVE_TAB_KEY) || tabs[0]?.id;
+    if(tabs.length > 0) {
+      showApp();
+      loadCurrentTab();
+    } else {
+      showLanding();
     }
-    saveTabs();
+  } else {
+    showLanding();
   }
-  loadCurrentTab();
+}
+
+function showLanding() {
+  $("#landingView").classList.remove("hidden");
+  $("#mainAppView").classList.add("hidden");
+}
+
+function showApp() {
+  $("#landingView").classList.add("hidden");
+  $("#mainAppView").classList.remove("hidden");
+}
+
+function createTab(mode) {
+  const newId = "tab_" + Date.now();
+  const title = mode === "civil" ? "내전 점수판" : "점령 점수판";
+  const newName = (tabs.length + 1) + "번째 " + title;
+  
+  tabs.push({ id: newId, name: newName, mode: mode });
+  activeTabId = newId;
+  saveTabs();
+  
+  window.__state = getDefaultState(mode);
+  saveCurrentTab();
+  
+  showApp();
+  renderTabs();
+  render();
 }
 
 function saveTabs() {
   localStorage.setItem(TABS_KEY, JSON.stringify(tabs));
-  localStorage.setItem(ACTIVE_TAB_KEY, activeTabId);
+  if(activeTabId) localStorage.setItem(ACTIVE_TAB_KEY, activeTabId);
 }
 
 function loadCurrentTab() {
   const raw = localStorage.getItem(STATE_PREFIX + activeTabId);
+  const activeTab = tabs.find(t => t.id === activeTabId);
+  const mode = activeTab ? activeTab.mode : "occ";
+  const conf = getModeConfig(mode);
+  
   if (raw) {
     try {
       const d = JSON.parse(raw);
-      const out = structuredClone(DEFAULT);
-      if(Array.isArray(d.players)) out.players = d.players.map(x=>String(x ?? "")).slice(0, SETTINGS.rosterSize);
-      while(out.players.length < SETTINGS.rosterSize) out.players.push("");
+      const out = getDefaultState(mode);
+      if(Array.isArray(d.players)) out.players = d.players.map(x=>String(x ?? "")).slice(0, conf.rosterSize);
+      while(out.players.length < conf.rosterSize) out.players.push("");
       if(typeof d.totals === "object" && d.totals) out.totals = d.totals;
       if(Array.isArray(d.history)) out.history = d.history;
       window.__state = out;
     } catch {
-      window.__state = structuredClone(DEFAULT);
+      window.__state = getDefaultState(mode);
     }
   } else {
-    window.__state = structuredClone(DEFAULT);
+    window.__state = getDefaultState(mode);
   }
   renderTabs();
   render();
@@ -81,6 +118,12 @@ function renderTabs() {
   if(!container) return;
   container.innerHTML = "";
   
+  const homeBtn = document.createElement("button");
+  homeBtn.className = "tab-home";
+  homeBtn.innerHTML = "🏠 처음으로";
+  homeBtn.onclick = showLanding;
+  container.appendChild(homeBtn);
+
   tabs.forEach(tab => {
     const div = document.createElement("div");
     div.className = `tab ${tab.id === activeTabId ? "active" : ""}`;
@@ -116,7 +159,10 @@ function renderTabs() {
         localStorage.removeItem(STATE_PREFIX + tab.id);
         tabs = tabs.filter(t => t.id !== tab.id);
         if (tabs.length === 0) {
-          tabs.push({ id: "tab_" + Date.now(), name: "1번째 점수판" });
+          activeTabId = null;
+          saveTabs();
+          showLanding();
+          return;
         }
         if (activeTabId === tab.id) {
           activeTabId = tabs[0].id;
@@ -130,19 +176,6 @@ function renderTabs() {
     div.appendChild(closeBtn);
     container.appendChild(div);
   });
-  
-  const addBtn = document.createElement("button");
-  addBtn.className = "tab-add";
-  addBtn.textContent = "➕ 추가";
-  addBtn.onclick = () => {
-    const newId = "tab_" + Date.now();
-    const newName = (tabs.length + 1) + "번째 점수판";
-    tabs.push({ id: newId, name: newName });
-    activeTabId = newId;
-    saveTabs();
-    loadCurrentTab();
-  };
-  container.appendChild(addBtn);
 }
 
 function safeInt(v, d=0){
@@ -169,17 +202,19 @@ function initTheme(){
   setTheme(saved || "dark");
 }
 
-function normalizeNames(arr){
-  return arr.map(x=>String(x||"").trim()).slice(0, SETTINGS.rosterSize);
+function normalizeNames(state){
+  const conf = getModeConfig(state.mode);
+  return state.players.map(x=>String(x||"").trim()).slice(0, conf.rosterSize);
 }
 
 function isRegistered(state){
-  const names = normalizeNames(state.players);
-  return names.length === SETTINGS.rosterSize && names.every(Boolean) && new Set(names).size === names.length;
+  const names = normalizeNames(state);
+  const conf = getModeConfig(state.mode);
+  return names.length === conf.rosterSize && names.every(Boolean) && new Set(names).size === names.length;
 }
 
 function ensureTotals(state){
-  const names = normalizeNames(state.players);
+  const names = normalizeNames(state);
   const t = {};
   for(const n of names){
     if(!n) continue;
@@ -217,12 +252,7 @@ function isFinished(state){
 }
 
 function escapeHTML(s){
-  return String(s ?? "")
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#039;");
+  return String(s ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
 }
 
 function summarizeRanksFull(tags){
@@ -241,7 +271,6 @@ function summarizeRanksFull(tags){
     else if(suf === "리") res[rk] = (res[rk]||0) + 1;
     else if(suf === "초") xs[rk] = (xs[rk]||0) + 1;
   }
-
   const parts = [];
   const gk = Object.keys(goals).map(Number).sort((a,b)=>a-b);
   const rk = Object.keys(res).map(Number).sort((a,b)=>a-b);
@@ -254,7 +283,7 @@ function summarizeRanksFull(tags){
 }
 
 function computePerPlayerTags(state){
-  const names = normalizeNames(state.players);
+  const names = normalizeNames(state);
   const per = {};
   for(const n of names) per[n] = [];
   for(const row of (state.history || [])){
@@ -276,7 +305,7 @@ function computePerPlayerTags(state){
 }
 
 function computePerPlayerStats(state, perTags){
-  const names = normalizeNames(state.players);
+  const names = normalizeNames(state);
   const out = {};
   for(const name of names){
     const tags = perTags[name] || [];
@@ -293,12 +322,8 @@ function computePerPlayerStats(state, perTags){
       const rk = safeInt(m[1], 0);
       const suf = m[2] || "";
       if(rk >= 1 && rk <= 8){
-        if(rk < bestRank){
-          bestRank = rk;
-          bestCount = 1;
-        }else if(rk === bestRank){
-          bestCount += 1;
-        }
+        if(rk < bestRank){ bestRank = rk; bestCount = 1; }
+        else if(rk === bestRank){ bestCount += 1; }
       }
       if(suf === "리") reCount += 1;
       else if(suf === "초") xCount += 1;
@@ -306,62 +331,80 @@ function computePerPlayerStats(state, perTags){
     }
 
     if(bestRank === 99) bestRank = 0;
-
-    out[name] = {
-      bestRank,
-      bestCount,
-      goalCount,
-      reCount,
-      xCount,
-      summary: summarizeRanksFull(tags)
-    };
+    out[name] = { bestRank, bestCount, goalCount, reCount, xCount, summary: summarizeRanksFull(tags) };
   }
   return out;
 }
 
 function buildBoard(state){
   ensureTotals(state);
-
+  const conf = getModeConfig(state.mode);
   const games = state.history.length;
   const remain = Math.max(0, SETTINGS.totalGames - games);
+  const names = normalizeNames(state).filter(Boolean);
 
-  const currentTotal = Object.values(state.totals).reduce((a,b)=>a+safeInt(b,0),0);
-  const maxTotal = SETTINGS.maxPerGame * SETTINGS.totalGames;
-  const maxPossibleFinal = currentTotal + (remain * SETTINGS.maxPerGame);
-  const diff = maxPossibleFinal - maxTotal;
-
-  const names = normalizeNames(state.players).filter(Boolean);
-  const rows = names.map(n=>[n, safeInt(state.totals[n],0)]).sort((a,b)=>b[1]-a[1]);
-
-  const kpi = `
-    <div class="kpi">
-      <div class="box">
-        <div class="t">현재 점령 점수</div>
-        <div class="v">
-          <span class="v-main">${currentTotal}점</span>
+  let kpi = "";
+  if(conf.isTeam) {
+    let redTotal = 0, blueTotal = 0;
+    for(let i=0; i<4; i++) redTotal += safeInt(state.totals[names[i]], 0);
+    for(let i=4; i<8; i++) blueTotal += safeInt(state.totals[names[i]], 0);
+    
+    kpi = `
+      <div class="kpi team-kpi">
+        <div class="box red-box">
+          <div class="t">레드팀 점수</div>
+          <div class="v"><span class="v-main">${redTotal}점</span></div>
+        </div>
+        <div class="box vs-box">
+          <div class="t">남은 판 수</div>
+          <div class="v"><span class="v-main">${remain}판</span></div>
+        </div>
+        <div class="box blue-box">
+          <div class="t">블루팀 점수</div>
+          <div class="v"><span class="v-main">${blueTotal}점</span></div>
         </div>
       </div>
-      <div class="box">
-        <div class="t">남은 판 수</div>
-        <div class="v">
-          <span class="v-main">${remain}판</span>
+    `;
+  } else {
+    const currentTotal = Object.values(state.totals).reduce((a,b)=>a+safeInt(b,0),0);
+    const maxTotal = SETTINGS.maxPerGame * SETTINGS.totalGames;
+    const maxPossibleFinal = currentTotal + (remain * SETTINGS.maxPerGame);
+    const diff = maxPossibleFinal - maxTotal;
+    
+    kpi = `
+      <div class="kpi">
+        <div class="box">
+          <div class="t">현재 점령 점수</div>
+          <div class="v"><span class="v-main">${currentTotal}점</span></div>
+        </div>
+        <div class="box">
+          <div class="t">남은 판 수</div>
+          <div class="v"><span class="v-main">${remain}판</span></div>
+        </div>
+        <div class="box">
+          <div class="t">최대 가능 점수</div>
+          <div class="v">
+            <span class="v-main">${maxPossibleFinal}점</span>
+            <span class="diff">(${fmtSignedPretty(diff)})</span>
+          </div>
         </div>
       </div>
-      <div class="box">
-        <div class="t">최대 가능 점수</div>
-        <div class="v">
-          <span class="v-main">${maxPossibleFinal}점</span>
-          <span class="diff">(${fmtSignedPretty(diff)})</span>
-        </div>
-      </div>
-    </div>
-  `;
+    `;
+  }
 
+  const rows = names.map((n, idx)=>({name: n, score: safeInt(state.totals[n],0), isRed: idx<4})).sort((a,b)=>b.score-a.score);
+  
   const table = `
     <table class="table">
       <thead><tr><th>순위</th><th>이름</th><th>점수</th></tr></thead>
       <tbody>
-        ${rows.map((r,i)=>`<tr><td>${i+1}</td><td>${escapeHTML(r[0])}</td><td class="score-cell">${r[1]}</td></tr>`).join("")}
+        ${rows.map((r,i)=>`
+          <tr class="${conf.isTeam ? (r.isRed ? 'row-red' : 'row-blue') : ''}">
+            <td>${i+1}</td>
+            <td>${escapeHTML(r.name)}</td>
+            <td class="score-cell">${r.score}</td>
+          </tr>
+        `).join("")}
       </tbody>
     </table>
   `;
@@ -382,53 +425,109 @@ function applyFinishedLock(){
   $("#clearInputs").disabled = done;
 }
 
+function renderPlayerInputFields(wrapId, state, isScore = false) {
+  const wrap = $(wrapId);
+  wrap.innerHTML = "";
+  const conf = getModeConfig(state.mode);
+  const names = normalizeNames(state);
+  
+  if (conf.isTeam) {
+    wrap.className = "grid-team";
+    const redGroup = document.createElement("div"); redGroup.className = "team-group team-red";
+    const blueGroup = document.createElement("div"); blueGroup.className = "team-group team-blue";
+    
+    const redTitle = document.createElement("div"); redTitle.className = "team-title"; redTitle.textContent = "레드팀";
+    const blueTitle = document.createElement("div"); blueTitle.className = "team-title"; blueTitle.textContent = "블루팀";
+    redGroup.appendChild(redTitle);
+    blueGroup.appendChild(blueTitle);
+
+    for(let i=0; i<8; i++) {
+      const g = document.createElement("div");
+      g.className = "input-wrap";
+      
+      if(isScore) {
+        const lab = document.createElement("div");
+        lab.className = "label big-label";
+        lab.textContent = names[i] || (i<4 ? `레드 ${i+1}` : `블루 ${i-3}`);
+        g.appendChild(lab);
+      }
+      
+      const inp = document.createElement("input");
+      if(!isScore) {
+        inp.placeholder = i<4 ? `레드 ${i+1} 닉네임` : `블루 ${i-3} 닉네임`;
+        inp.value = state.players[i] || "";
+      } else {
+        inp.addEventListener("keydown",(e)=>{
+          if(e.key === "Enter"){
+            e.preventDefault();
+            const list = $$("#scoreInputs input");
+            if(i < list.length - 1) list[i+1].focus();
+            else addRound();
+          }
+          if(e.key === "Escape"){
+            e.preventDefault();
+            clearScoreInputs();
+          }
+        });
+      }
+      g.appendChild(inp);
+      
+      if(i<4) redGroup.appendChild(g);
+      else blueGroup.appendChild(g);
+    }
+    wrap.appendChild(redGroup);
+    wrap.appendChild(blueGroup);
+  } else {
+    wrap.className = "grid";
+    for(let i=0; i<4; i++){
+      const g = document.createElement("div");
+      g.className = "input-wrap";
+      
+      if(isScore) {
+        const lab = document.createElement("div");
+        lab.className = "label big-label";
+        lab.textContent = names[i] || `첫번째 선수`;
+        g.appendChild(lab);
+      }
+      
+      const inp = document.createElement("input");
+      if(!isScore) {
+        inp.placeholder = `${["첫번째","두번째","세번째","네번째"][i]} 닉네임`;
+        inp.value = state.players[i] || "";
+      } else {
+        inp.addEventListener("keydown",(e)=>{
+          if(e.key === "Enter"){
+            e.preventDefault();
+            const list = $$("#scoreInputs input");
+            if(i < list.length - 1) list[i+1].focus();
+            else addRound();
+          }
+          if(e.key === "Escape"){
+            e.preventDefault();
+            clearScoreInputs();
+          }
+        });
+      }
+      g.appendChild(inp);
+      wrap.appendChild(g);
+    }
+  }
+}
+
 function render(){
   const state = window.__state;
-
-  const pWrap = $("#playerInputs");
-  pWrap.innerHTML = "";
-  for(let i=0;i<SETTINGS.rosterSize;i++){
-    const inp = document.createElement("input");
-    inp.placeholder = `${ORD[i]} 닉네임`;
-    inp.value = state.players[i] || "";
-    pWrap.appendChild(inp);
-  }
-
+  const conf = getModeConfig(state.mode);
+  
+  $("#registerHint").textContent = conf.isTeam ? "레드팀 4명, 블루팀 4명 · 닉네임 중복 불가" : "인원 4명 고정 · 닉네임 중복 불가";
+  
+  renderPlayerInputFields("#playerInputs", state, false);
+  
   const registered = isRegistered(state);
-
   $("#registerCard").classList.toggle("hidden", registered);
   $("#mainBoard").classList.toggle("hidden", !registered);
   $("#editPlayers").classList.toggle("hidden", !registered);
 
-  const sWrap = $("#scoreInputs");
-  sWrap.innerHTML = "";
-  const names = normalizeNames(state.players);
-
-  for(let i=0;i<SETTINGS.rosterSize;i++){
-    const wrap = document.createElement("div");
-    wrap.className = "input-wrap";
-
-    const lab = document.createElement("div");
-    lab.className = "label big-label";
-    lab.textContent = names[i] || `${ORD[i]} 선수`;
-    wrap.appendChild(lab);
-
-    const inp = document.createElement("input");
-    inp.addEventListener("keydown",(e)=>{
-      if(e.key === "Enter"){
-        e.preventDefault();
-        const list = $$("#scoreInputs input");
-        if(i < list.length - 1) list[i+1].focus();
-        else addRound();
-      }
-      if(e.key === "Escape"){
-        e.preventDefault();
-        clearScoreInputs();
-      }
-    });
-    wrap.appendChild(inp);
-    sWrap.appendChild(wrap);
-  }
+  renderPlayerInputFields("#scoreInputs", state, true);
 
   if(registered){
     ensureTotals(state);
@@ -452,8 +551,8 @@ function render(){
                 let rankStr = `${parsed.rank}등`;
                 if(parsed.re) rankStr = `${parsed.rank}리`;
                 else if(parsed.x) rankStr = `${parsed.rank}초`;
-                
-                return `${p} ㅣ ${rankStr} ㅣ ${h.delta[p]}점`;
+                const c = conf.isTeam ? (pIdx < 4 ? "log-red" : "log-blue") : "";
+                return `<span class="${c}">${p} ㅣ ${rankStr} ㅣ ${h.delta[p]}점</span>`;
               }).join("<br>");
 
               return `
@@ -472,7 +571,6 @@ function render(){
     }
 
     applyFinishedLock();
-
     const settleBtn = $("#settle");
     if(settleBtn){
       if(isFinished(state)){
@@ -483,31 +581,19 @@ function render(){
         if(!settleBtn.classList.contains("ghost")) settleBtn.classList.add("ghost");
       }
     }
-  }else{
-    const playStatus = $("#playStatus");
-    if(playStatus) playStatus.textContent = "";
-    $("#board").innerHTML = "";
-    const logEl = $("#gameLog");
-    if(logEl) logEl.innerHTML = "";
-
-    const settleBtn = $("#settle");
-    if(settleBtn){
-      settleBtn.classList.remove("primary","settleReady");
-      if(!settleBtn.classList.contains("ghost")) settleBtn.classList.add("ghost");
-    }
   }
 }
 
 function registerPlayers(){
   const state = window.__state;
+  const conf = getModeConfig(state.mode);
   const inputs = $$("#playerInputs input");
-  const names = inputs.map(i=>i.value.trim()).slice(0, SETTINGS.rosterSize);
+  const names = inputs.map(i=>i.value.trim()).slice(0, conf.rosterSize);
 
   if(names.some(n=>!n)) return alert("닉네임을 모두 입력해주세요.");
   if(new Set(names).size !== names.length) return alert("중복된 닉네임이 있습니다. 다르게 설정해주세요.");
 
   const hasProgress = (state.history || []).length > 0;
-
   if(!hasProgress){
     state.players = names;
     state.totals = Object.fromEntries(names.map(n=>[n,0]));
@@ -517,23 +603,17 @@ function registerPlayers(){
     return;
   }
 
-  const prevNames = normalizeNames(state.players).filter(Boolean);
+  const prevNames = normalizeNames(state).filter(Boolean);
   const prevTotals = state.totals || {};
-
   const map = {};
-  for(let i=0;i<Math.min(prevNames.length, names.length);i++){
-    map[prevNames[i]] = names[i];
-  }
+  for(let i=0;i<Math.min(prevNames.length, names.length);i++){ map[prevNames[i]] = names[i]; }
 
   const newTotals = {};
   for(const oldName of prevNames){
     const nn = map[oldName] || oldName;
     newTotals[nn] = (newTotals[nn] || 0) + safeInt(prevTotals[oldName], 0);
   }
-
-  for(const nn of names){
-    if(newTotals[nn] == null) newTotals[nn] = 0;
-  }
+  for(const nn of names){ if(newTotals[nn] == null) newTotals[nn] = 0; }
 
   const newHistory = (state.history || []).map(r=>{
     const delta = r?.delta || {};
@@ -548,7 +628,6 @@ function registerPlayers(){
   state.players = names;
   state.totals = newTotals;
   state.history = newHistory;
-
   save(state);
   render();
 }
@@ -563,6 +642,7 @@ function editPlayers(){
 
 function addRound(){
   const state = window.__state;
+  const conf = getModeConfig(state.mode);
   if(!isRegistered(state)) return alert("먼저 선수를 등록해주세요.");
   if(isFinished(state)) return alert("30판이 모두 종료되었습니다.");
 
@@ -570,11 +650,8 @@ function addRound(){
   const tokens = inputs.map(i=>i.value.trim());
 
   let parsed;
-  try{
-    parsed = tokens.map(parseToken);
-  }catch(e){
-    return alert(`입력값을 확인해주세요: ${e.message}`);
-  }
+  try{ parsed = tokens.map(parseToken); }
+  catch(e){ return alert(`입력값을 확인해주세요: ${e.message}`); }
 
   const byRank = {};
   for(let i=0;i<parsed.length;i++){
@@ -589,13 +666,11 @@ function addRound(){
   }
 
   ensureTotals(state);
-
   const delta = {};
-  for(let i=0;i<SETTINGS.rosterSize;i++){
+  for(let i=0;i<conf.rosterSize;i++){
     const name = state.players[i];
     delta[name] = scoreFrom(parsed[i]);
   }
-
   for(const name of state.players){
     state.totals[name] = safeInt(state.totals[name],0) + safeInt(delta[name],0);
   }
@@ -624,7 +699,6 @@ function undoRound(){
   for(const name of state.players){
     state.totals[name] = safeInt(state.totals[name],0) - safeInt(delta[name],0);
   }
-
   save(state);
   render();
 }
@@ -636,21 +710,17 @@ window.deleteRound = function(idx) {
   
   const newTotals = {};
   for(const n of state.players) newTotals[n] = 0;
-  
   for(const row of state.history){
-    for(const n of state.players){
-      newTotals[n] += safeInt(row.delta[n], 0);
-    }
+    for(const n of state.players){ newTotals[n] += safeInt(row.delta[n], 0); }
   }
   state.totals = newTotals;
-  
   save(state);
   render();
 };
 
 function resetAll(){
   if(!confirm("현재 점수판의 모든 데이터를 초기화하시겠습니까?")) return;
-  window.__state = structuredClone(DEFAULT);
+  window.__state = getDefaultState(window.__state.mode);
   save(window.__state);
   render();
 }
@@ -661,15 +731,10 @@ function settle(){
   if(!isFinished(state)) return alert("30판을 모두 채워야 정산이 가능합니다.");
 
   ensureTotals(state);
-
   const perTags = computePerPlayerTags(state);
   const perStats = computePerPlayerStats(state, perTags);
-
-  const players = normalizeNames(state.players);
-  const rows = players
-    .map(name=>({ name, total: safeInt(state.totals[name],0) }))
-    .sort((a,b)=>b.total-a.total);
-
+  const players = normalizeNames(state);
+  const rows = players.map(name=>({ name, total: safeInt(state.totals[name],0) })).sort((a,b)=>b.total-a.total);
   const leader = rows[0]?.total ?? 0;
 
   const lines = rows.map((r, idx)=>{
@@ -688,7 +753,7 @@ function settle(){
     };
   });
 
-  const payload = { at: nowISO(), players, lines };
+  const payload = { at: nowISO(), players, lines, mode: state.mode };
   localStorage.setItem(PAYLOAD_KEY, JSON.stringify(payload));
   location.href = "result.html";
 }
@@ -719,12 +784,7 @@ function importData(){
   const input = $("#importFile");
   if(!input) return;
   input.value = "";
-  try{
-    if(typeof input.showPicker === "function"){
-      input.showPicker();
-      return;
-    }
-  }catch{}
+  try{ if(typeof input.showPicker === "function"){ input.showPicker(); return; } }catch{}
   input.click();
 }
 
@@ -740,6 +800,7 @@ function handleImportFile(file){
         alert("잘못된 형식의 파일입니다.");
         return;
       }
+      if(!state.mode) state.mode = "occ";
 
       localStorage.setItem(THEME_KEY, theme);
       if(typeof pack?.settlePhoto === "string") localStorage.setItem(PHOTO_KEY, pack.settlePhoto);
@@ -750,14 +811,15 @@ function handleImportFile(file){
       saveCurrentTab();
       render();
       alert("데이터를 성공적으로 불러왔습니다.");
-    }catch{
-      alert("데이터 불러오기에 실패했습니다.");
-    }
+    }catch{ alert("데이터 불러오기에 실패했습니다."); }
   };
   reader.readAsText(file, "utf-8");
 }
 
 function bind(){
+  $("#btnOccMode").onclick = () => createTab("occ");
+  $("#btnCivilMode").onclick = () => createTab("civil");
+
   $("#themeToggle").onclick = ()=>{
     const cur = document.documentElement.getAttribute("data-theme") || "dark";
     setTheme(cur === "dark" ? "light" : "dark");
@@ -765,17 +827,13 @@ function bind(){
 
   $("#savePlayers").onclick = registerPlayers;
   $("#editPlayers").onclick = editPlayers;
-
   $("#addRound").onclick = addRound;
   $("#clearInputs").onclick = clearScoreInputs;
-
   $("#undoRound").onclick = undoRound;
   $("#resetAll").onclick = resetAll;
   $("#settle").onclick = settle;
-
   $("#exportData").onclick = exportData;
   $("#importData").onclick = importData;
-
   $("#importFile").addEventListener("change",(e)=>{
     const f = e.target.files?.[0];
     if(!f) return;

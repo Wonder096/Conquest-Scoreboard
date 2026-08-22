@@ -1,7 +1,10 @@
-const KEY = "talse_runner_scoreboard_v10";
 const THEME_KEY = "talse_runner_theme_v1";
 const PHOTO_KEY = "talse_runner_settle_photo_v1";
 const PAYLOAD_KEY = "talse_runner_settle_payload_v3";
+const TABS_KEY = "tr_tabs_v1";
+const ACTIVE_TAB_KEY = "tr_active_tab_v1";
+const STATE_PREFIX = "tr_state_v1_";
+const OLD_KEY = "talse_runner_scoreboard_v10";
 
 const SETTINGS = {
   rosterSize: 4,
@@ -18,6 +21,130 @@ const ORD = ["첫번째","두번째","세번째","네번째"];
 const $ = (s)=>document.querySelector(s);
 const $$ = (s)=>Array.from(document.querySelectorAll(s));
 
+let tabs = [];
+let activeTabId = null;
+
+function initTabs() {
+  const savedTabs = localStorage.getItem(TABS_KEY);
+  if (savedTabs) {
+    tabs = JSON.parse(savedTabs);
+    activeTabId = localStorage.getItem(ACTIVE_TAB_KEY) || tabs[0].id;
+  } else {
+    tabs = [{ id: "tab_1", name: "1팀 점수판" }];
+    activeTabId = "tab_1";
+    const oldData = localStorage.getItem(OLD_KEY);
+    if (oldData) {
+      localStorage.setItem(STATE_PREFIX + "tab_1", oldData);
+    }
+    saveTabs();
+  }
+  loadCurrentTab();
+}
+
+function saveTabs() {
+  localStorage.setItem(TABS_KEY, JSON.stringify(tabs));
+  localStorage.setItem(ACTIVE_TAB_KEY, activeTabId);
+}
+
+function loadCurrentTab() {
+  const raw = localStorage.getItem(STATE_PREFIX + activeTabId);
+  if (raw) {
+    try {
+      const d = JSON.parse(raw);
+      const out = structuredClone(DEFAULT);
+      if(Array.isArray(d.players)) out.players = d.players.map(x=>String(x ?? "")).slice(0, SETTINGS.rosterSize);
+      while(out.players.length < SETTINGS.rosterSize) out.players.push("");
+      if(typeof d.totals === "object" && d.totals) out.totals = d.totals;
+      if(Array.isArray(d.history)) out.history = d.history;
+      window.__state = out;
+    } catch {
+      window.__state = structuredClone(DEFAULT);
+    }
+  } else {
+    window.__state = structuredClone(DEFAULT);
+  }
+  renderTabs();
+  render();
+}
+
+function saveCurrentTab() {
+  localStorage.setItem(STATE_PREFIX + activeTabId, JSON.stringify(window.__state));
+}
+
+function save(state) {
+  window.__state = state;
+  saveCurrentTab();
+}
+
+function renderTabs() {
+  const container = $("#tabsContainer");
+  if(!container) return;
+  container.innerHTML = "";
+  
+  tabs.forEach(tab => {
+    const div = document.createElement("div");
+    div.className = `tab ${tab.id === activeTabId ? "active" : ""}`;
+    
+    const nameSpan = document.createElement("span");
+    nameSpan.className = "tab-name";
+    nameSpan.textContent = tab.name;
+    nameSpan.title = "더블클릭하여 이름 변경";
+    
+    nameSpan.onclick = () => {
+      if(tab.id !== activeTabId) {
+        activeTabId = tab.id;
+        saveTabs();
+        loadCurrentTab();
+      }
+    };
+    
+    nameSpan.ondblclick = () => {
+      const newName = prompt("새로운 점수판 이름을 입력해주세요:", tab.name);
+      if (newName && newName.trim()) {
+        tab.name = newName.trim();
+        saveTabs();
+        renderTabs();
+      }
+    };
+    
+    const closeBtn = document.createElement("button");
+    closeBtn.className = "tab-close";
+    closeBtn.innerHTML = "×";
+    closeBtn.onclick = (e) => {
+      e.stopPropagation();
+      if (confirm(`'${tab.name}' 탭을 정말 삭제하시겠습니까?\n삭제된 데이터는 복구할 수 없습니다.`)) {
+        localStorage.removeItem(STATE_PREFIX + tab.id);
+        tabs = tabs.filter(t => t.id !== tab.id);
+        if (tabs.length === 0) {
+          tabs.push({ id: "tab_" + Date.now(), name: "새 점수판" });
+        }
+        if (activeTabId === tab.id) {
+          activeTabId = tabs[0].id;
+        }
+        saveTabs();
+        loadCurrentTab();
+      }
+    };
+    
+    div.appendChild(nameSpan);
+    div.appendChild(closeBtn);
+    container.appendChild(div);
+  });
+  
+  const addBtn = document.createElement("button");
+  addBtn.className = "tab-add";
+  addBtn.textContent = "➕ 추가";
+  addBtn.onclick = () => {
+    const newId = "tab_" + Date.now();
+    const newName = "점수판 " + (tabs.length + 1);
+    tabs.push({ id: newId, name: newName });
+    activeTabId = newId;
+    saveTabs();
+    loadCurrentTab();
+  };
+  container.appendChild(addBtn);
+}
+
 function safeInt(v, d=0){
   const n = parseInt(v, 10);
   return Number.isFinite(n) ? n : d;
@@ -27,26 +154,6 @@ function nowISO(){
   const d = new Date();
   const p = (n)=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
-}
-
-function load(){
-  try{
-    const raw = localStorage.getItem(KEY);
-    if(!raw) return structuredClone(DEFAULT);
-    const d = JSON.parse(raw);
-    const out = structuredClone(DEFAULT);
-    if(Array.isArray(d.players)) out.players = d.players.map(x=>String(x ?? "")).slice(0, SETTINGS.rosterSize);
-    while(out.players.length < SETTINGS.rosterSize) out.players.push("");
-    if(typeof d.totals === "object" && d.totals) out.totals = d.totals;
-    if(Array.isArray(d.history)) out.history = d.history;
-    return out;
-  }catch{
-    return structuredClone(DEFAULT);
-  }
-}
-
-function save(state){
-  localStorage.setItem(KEY, JSON.stringify(state));
 }
 
 function setTheme(theme){
@@ -542,7 +649,7 @@ window.deleteRound = function(idx) {
 };
 
 function resetAll(){
-  if(!confirm("모든 데이터를 초기화하시겠습니까?")) return;
+  if(!confirm("현재 점수판의 모든 데이터를 초기화하시겠습니까?")) return;
   window.__state = structuredClone(DEFAULT);
   save(window.__state);
   render();
@@ -588,8 +695,10 @@ function settle(){
 
 function exportData(){
   const state = window.__state;
+  const currentTabName = tabs.find(t => t.id === activeTabId)?.name || "점수판";
   const pack = {
     app: "Hall of Glory",
+    tabName: currentTabName,
     savedAt: nowISO(),
     theme: localStorage.getItem(THEME_KEY) || "dark",
     state,
@@ -599,7 +708,7 @@ function exportData(){
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `hall_of_glory_score_${pack.savedAt.replaceAll(":","").replaceAll(" ","_")}.json`;
+  a.download = `hall_of_glory_${currentTabName}_${pack.savedAt.replaceAll(":","").replaceAll(" ","_")}.json`;
   document.body.appendChild(a);
   a.click();
   a.remove();
@@ -633,12 +742,12 @@ function handleImportFile(file){
       }
 
       localStorage.setItem(THEME_KEY, theme);
-      localStorage.setItem(KEY, JSON.stringify(state));
       if(typeof pack?.settlePhoto === "string") localStorage.setItem(PHOTO_KEY, pack.settlePhoto);
       else localStorage.removeItem(PHOTO_KEY);
 
       setTheme(theme);
-      window.__state = load();
+      window.__state = state;
+      saveCurrentTab();
       render();
       alert("데이터를 성공적으로 불러왔습니다.");
     }catch{
@@ -683,9 +792,8 @@ function bind(){
 
 function init(){
   initTheme();
-  window.__state = load();
   bind();
-  render();
+  initTabs();
 }
 
 init();
